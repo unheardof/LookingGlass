@@ -11,7 +11,7 @@ DATA_FILE = '/tmp/' + FILENAME
 
 # TODO: Change this to a command-line option (which defaults to False)
 # Change this to True to run this locally
-LOCAL_MODE = False
+LOCAL_MODE = True
 
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
