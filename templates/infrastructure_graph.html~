@@ -1,0 +1,491 @@
+<!-- Reference: http://visjs.org/docs/network/ -->
+<!-- Based on this example: http://visjs.org/examples/network/other/manipulation.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Infrastructure Graph</title>
+
+    <style type="text/css">
+      * {
+	  margin: 0;
+      }
+      html, body {
+	  color: #d3d3d3;
+	  font: 12pt arial;
+	  background-color: #000000;
+	  height: 100%;
+      }
+      #mynetwork {
+	  position:relative;
+	  min-height: 100%;
+	  width: 100%;
+	  height: auto;
+	  height: 100%;
+	  margin: 0 auto;
+	  background-color: #000000;
+      }
+      table.legend_table {
+	  font-size: 11px;
+	  border-width:1px;
+	  border-color:#d3d3d3;
+	  border-style:solid;
+      }
+      table.legend_table,td {
+	  border-width:1px;
+	  border-color:#d3d3d3;
+	  border-style:solid;
+	  padding: 2px;
+      }
+      div.table_content {
+	  width:80px;
+	  text-align:center;
+      }
+      div.table_description {
+	  width:100px;
+      }
+
+      #operation {
+	  font-size:28px;
+      }
+      
+      #network-popUp {
+	  color: black;
+	  display:none;
+	  position:fixed;
+	  top: 50%;
+	  left: 50%;
+	  transform: translate(-50%, -50%);
+	  z-index:299;
+	  width:auto;
+	  height:auto;
+	  background-color: #f9f9f9;
+	  border-style:solid;
+	  border-width:3px;
+	  border-color: #5394ed;
+	  padding:10px;
+	  text-align: center;
+      }
+
+      #node-popup {
+	  position: absolute;
+	  display: none;
+	  color: black;
+	  width: auto;
+	  height: auto;
+	  background-color: #f9f9f9;
+	  border-style:solid;
+	  border-width:3px;
+	  border-color: #5394ed;
+	  padding:10px;
+	  text-align: center;
+      }
+    </style>
+    <script type="text/javascript" src="js/vis-4.21.0/examples/network/exampleUtil.js"></script>
+    <script type="text/javascript" src="js/vis-4.21.0/dist/vis.js"></script>
+    <link href="js/vis-4.21.0/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+  </head>
+
+  <body onload="init();">
+    <div id = "node-popup" style="visibility: hidden" width="auto">
+      text
+    </div>
+    <div id="network-popUp" width="auto">
+      <span id="operation">node</span> <br>
+      <table style="margin:auto;">
+	<tr>
+	  <td>IP</td><td><input id="node-ip" value="" /></td>
+	</tr>
+	<tr>
+	  <td>Hostname</td><td><input id="node-hostname" value="new value" /></td>
+	</tr>
+	<tr>
+	  <td>type</td><td>
+	    <select id="node-type" required>
+	      <option value="ops_box">Ops Box (physical computer you're typing on)</option>
+	      <option value="staging_server">Staging Server (e.g. Team Server)</option>
+	      <option value="redirect">Redirector</option>
+	      <option value="beacon">Beacon</option>
+	      <option value="windows_host">Windows Host</option>
+	      <option value="linux_host">Linux Host</option>
+	      <option value="other">Other</option>
+	    </select>
+	  </td>
+	</tr>
+      </table>
+      <input type="button" value="save" id="saveButton" />
+      <input type="button" value="cancel" id="cancelButton" />
+    </div>
+
+    <div id="mynetwork"></div>
+
+    <script>
+var graphVersion = 0;
+var versionAtLastUpdate = 0;
+var nodes = null;
+var edges = null;
+var network = null;
+var seed = 2; // Want the nodes to be rendered the same way every time (rather than based off a random seed)
+var data = {};
+
+var options = {
+    locale: 'en',
+    interaction: {
+        multiselect: true,
+    },
+    physics:{
+	enabled: true,
+	hierarchicalRepulsion: {
+	    centralGravity: 2.0,
+	    springLength: 10,
+	    springConstant: 1.5,
+	    nodeDistance: 300,
+	    damping: 0.9
+	},
+        solver: 'hierarchicalRepulsion'
+    },
+    layout: {
+	randomSeed: seed,
+        improvedLayout: true,
+	hierarchical: {
+	    enabled: false
+	}
+    },
+    edges: {
+	smooth: {
+            type: "continuous"
+	}
+    },
+    groups: {
+	ops_box: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/hacker-icon.ico') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	staging_server: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/staging-server-icon.png') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	redirect: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/redirector-icon.png') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	beacon: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/beacon-icon.ico') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	windows_host: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/windows-icon.png') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+        },
+	linux_host: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/linux-icon.png') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	other: {
+	    shape: 'image',
+	    image: '{{ url_for('static', filename = 'images/generic-host.png') }}',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	}
+    },
+    manipulation: {
+	addNode: function (data, callback) {
+	    // filling in the popup DOM elements
+	    document.getElementById('operation').innerHTML = "Add Node";
+	    document.getElementById('node-ip').value = data.title;
+	    document.getElementById('node-hostname').value = data.label;
+            document.getElementById('node-type').value = data.group;
+	    document.getElementById('saveButton').onclick = saveData.bind(this, data, callback);
+	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
+	    document.getElementById('network-popUp').style.display = 'block';
+
+	    graphVersion += 1;
+	},
+	editNode: function (data, callback) {
+	    // filling in the popup DOM elements
+	    document.getElementById('operation').innerHTML = "Edit Node";
+	    document.getElementById('node-ip').value = data.title;
+	    document.getElementById('node-hostname').value = data.label;
+	    document.getElementById('node-type').value = data.group;
+	    document.getElementById('saveButton').onclick = saveData.bind(this, data, callback);
+	    document.getElementById('cancelButton').onclick = cancelEdit.bind(this,callback);
+	    document.getElementById('network-popUp').style.display = 'block';
+
+	    graphVersion += 1;
+	},
+        // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
+	addEdge: function (data, callback) {
+	    if (data.from == data.to) {
+		var r = confirm("Do you want to connect the node to itself?");
+		if (r == true) {
+		    callback(data);
+		}
+	    }
+	    else {
+		callback(data);
+	    }
+
+	    graphVersion += 1;
+	    setTimeout(saveGraph, 100);
+	},
+	deleteNode: function (data, callback) {
+            callback(data);
+	    graphVersion += 1;
+	    setTimeout(saveGraph, 100);
+	},
+        deleteEdge: function (data, callback) {
+            callback(data);
+	    graphVersion += 1;
+	    setTimeout(saveGraph, 100);
+        }
+    }
+};
+
+
+function destroy() {
+    if (network !== null) {
+	network.destroy();
+	network = null;
+    }
+}
+
+function draw() {
+    destroy();
+    nodes = [];
+    edges = [];
+
+    // create a network
+    var container = document.getElementById('mynetwork');
+
+    network = create_network(container, data, options);
+}
+
+function clearPopUp() {
+    document.getElementById('saveButton').onclick = null;
+    document.getElementById('cancelButton').onclick = null;
+    document.getElementById('network-popUp').style.display = 'none';
+}
+
+function cancelEdit(callback) {
+    clearPopUp();
+    callback(null);
+}
+
+function saveData(data,callback) {
+    data.title = document.getElementById('node-ip').value;
+    data.label = document.getElementById('node-hostname').value;
+    data.group = document.getElementById('node-type').value;
+
+    clearPopUp();
+    callback(data);
+    saveGraph();
+}
+
+function objectToArray(obj) {
+    return Object.keys(obj).map(function (key) {
+        obj[key].id = key;
+        return obj[key];
+    });
+}
+
+function saveGraph() {
+    if(graphVersion > versionAtLastUpdate) {
+	let nodes_graph = network.body.nodes;
+	let nodes_list = [];
+	let node;
+
+	// resize all nodes
+	for (let nodeId in nodes_graph) {
+	    if (nodes_graph.hasOwnProperty(nodeId)) {
+		node_obj = nodes_graph[nodeId];
+		node = {}
+		node['id'] = node_obj.id;
+		node['label'] = node_obj.options.label;
+                node['title'] = node_obj.options.title;
+		node['x'] = node_obj.x;
+		node['y'] = node_obj.y;
+		node['group'] = node_obj.options.group;
+		node['connections'] = [];
+
+		node_obj.edges.forEach(
+		    function(edge, index) {
+			//console.log("Edge ID: " + edge.id + "; From: " + edge.fromID);
+			if(edge.fromId == node_obj.id) {
+			    node['connections'].push(edge.toId)
+			}
+		    }
+		);
+
+		nodes_list.push(node);
+	    }
+	}
+
+	// Get the latest information from the server to ensure that we don't overwrite previously commited changes
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.open( "GET", "{{ url_for('get_graph_data') }}", false ); // false for synchronous request
+	xmlHttp.send();
+
+	var inputData = JSON.parse(xmlHttp.responseText);
+
+	// TODO: Implement better consitency enforcement (since this still leaves a window for weird, inconsistent stuff happening
+	// since an update could come in between when the version check is performed and when the update is performed
+	if(inputData['graph_version'] >= graphVersion || inputData['graph_version'] > versionAtLastUpdate) {
+	    alert('Your graph is out of date; please refresh the page and then reapply your changes');
+	} else {
+	    post_obj = {
+		graph_version: graphVersion,
+		nodes:  nodes_list
+	    };
+	    
+	    var xhttp = new XMLHttpRequest();
+	    xhttp.open("POST", "{{ url_for('update') }}", true);
+	    xhttp.setRequestHeader("Content-type", "application/json");
+	    xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+		    versionAtLastUpdate = graphVersion;
+		}
+	    };
+
+	    xhttp.send(JSON.stringify(post_obj, undefined, 2));
+	}
+    }
+}
+
+function create_network(container, data, options) {
+    network = new vis.Network(container, data, options);
+    network.on( 'click', function(params) {
+	var popupDiv = document.getElementById('node-popup');
+
+	// TODO: Remove
+	params.event = "[original event]";
+	console.log("Pointer: " + JSON.stringify(params.pointer.DOM));
+	popupDiv.style.left = params.pointer.DOM.x + 'px';
+	popupDiv.style.top = params.pointer.DOM.y + 'px';
+	popupDiv.style.visibility='visible';
+	popupDiv.style.display = 'inline-block';
+	
+	//$(popupDiv).offset({ top: mousePos.y, left: mousePos.x });
+	//var ids = properties.nodes;
+	//var clickedNodes = data.nodes.get(ids);
+	//console.log('clicked nodes:', clickedNodes);
+    });
+
+    return network;
+}
+
+function refreshGraph() {
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+            var inputData = JSON.parse(xmlHttp.responseText);
+
+	    if(inputData['graph_version'] > graphVersion) {
+		var data = {
+                    nodes: getNodeData(inputData['nodes']),
+                    edges: getEdgeData(inputData['nodes'])
+		}
+		
+		var container = document.getElementById('mynetwork');
+		network = create_network(container, data, options);
+		graphVersion = inputData['graph_version'];
+		versionAtLastUpdate = graphVersion;
+	    }
+
+	    setTimeout(refreshGraph, 100);
+	}
+    };
+
+    xmlHttp.open( "GET", "{{ url_for('get_graph_data') }}", true ); // true for asynchronous request
+    xmlHttp.send();
+}
+
+function getNodeData(data) {
+    var networkNodes = [];
+
+    data.forEach(
+	function(elem, index, array) {
+            networkNodes.push(elem);
+	}
+    );
+
+    return new vis.DataSet(networkNodes);
+}
+
+function getNodeById(data, id) {
+    for (var n = 0; n < data.length; n++) {
+        if (data[n].id == id) {  // double equals since id can be numeric or string
+            return data[n];
+        }
+    };
+
+    throw 'Can not find id \'' + id + '\' in data';
+}
+
+function getEdgeData(data) {
+    var networkEdges = [];
+
+    data.forEach(function(node) {
+        // add the connection
+        node.connections.forEach(function(connId, cIndex, conns) {
+            networkEdges.push({from: node.id, to: connId});
+            let cNode = getNodeById(data, connId);
+
+            var elementConnections = cNode.connections;
+
+            // remove the connection from the other node to prevent duplicate connections
+            var duplicateIndex = elementConnections.findIndex(function(connection) {
+                return connection == node.id; // double equals since id can be numeric or string
+            });
+
+
+            if (duplicateIndex != -1) {
+                elementConnections.splice(duplicateIndex, 1);
+            };
+        });
+    });
+
+    return new vis.DataSet(networkEdges);
+}
+
+function objectToArray(obj) {
+    return Object.keys(obj).map(function (key) {
+        obj[key].id = key;
+        return obj[key];
+    });
+}
+
+function init() {
+    draw(); 
+    refreshGraph(); // Do an initial load of the current graph data
+}
+    </script>
+  </body>
+</html>
+
+
