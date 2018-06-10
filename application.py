@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template, send_from_directory
+
+import argparse
 import boto3
 import os.path
+import sys
 
 # TODO: Implement graph version tracking on a per node basis (which encompasses the edges from that node) rather than on the graph as whole
 # TODO: Write data to a better / more persistent store (i.e. a database)
@@ -8,10 +11,6 @@ import os.path
 S3_BUCKET = 'looking-glass-data'
 FILENAME = 'graph_data.json'
 DATA_FILE = '/tmp/' + FILENAME
-
-# TODO: Change this to a command-line option (which defaults to False)
-# Change this to True to run this locally
-LOCAL_MODE = True
 
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
@@ -30,7 +29,7 @@ def send_js(path):
 def get_graph_data():
     data = None
 
-    if LOCAL_MODE:
+    if app.config['local_mode']:
         if os.path.isfile(DATA_FILE):
             with open(DATA_FILE, 'r') as f:
                 data = f.read()
@@ -52,7 +51,7 @@ def get_graph_data():
 def update():
     print("Received %s" % request.json)
 
-    if LOCAL_MODE:
+    if app.config['local_mode']:
         with open(DATA_FILE, 'w') as f:
             if isinstance(request.data, bytes):
                 f.write(request.data.decode())
@@ -64,3 +63,11 @@ def update():
         
 
     return 'ok'
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Start the Looking Glass application')
+    parser.add_argument('--local', action='store_true', help='If provided, the script will use the local filesystem for persistence (instead of S3)')
+    args = parser.parse_args()
+    
+    app.config['local_mode'] = args.local
+    app.run()
