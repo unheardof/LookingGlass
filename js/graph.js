@@ -143,7 +143,7 @@ function cancelEdit(callback) {
     callback(null);
 }
 
-      function saveData(data,callback) {
+function saveData(data,callback) {
     // TODO: Post graph data back to the server (and then save it)
     data.id = document.getElementById('node-id').value;
     data.label = document.getElementById('node-label').value;

@@ -77,8 +77,9 @@
 	  border-style:solid;
 	  border-width:3px;
 	  border-color: #5394ed;
-	  padding:10px;
+	  padding:5px;
 	  text-align: center;
+	  z-index: 1;
       }
     </style>
     <script type="text/javascript" src="js/vis-4.21.0/examples/network/exampleUtil.js"></script>
@@ -87,7 +88,7 @@
   </head>
 
   <body onload="init();">
-    <div id = "node-popup" style="visibility: hidden" width="auto">
+    <div id = "node-popup" width="auto">
       text
     </div>
     <div id="network-popUp" width="auto">
@@ -267,7 +268,6 @@ var options = {
     }
 };
 
-
 function destroy() {
     if (network !== null) {
 	network.destroy();
@@ -379,7 +379,57 @@ function saveGraph() {
 
 function create_network(container, data, options) {
     network = new vis.Network(container, data, options);
-    network.on( 'click', function(params) {
+    
+    // Based on https://stackoverflow.com/questions/35906493/accessing-node-data-in-vis-js-click-handler
+    network.on('click', function(properties) {
+	var popupDiv = document.getElementById('node-popup');
+	console.log('Click Properties:', JSON.stringify(properties));
+
+	if('nodes' in properties && properties.nodes.length != 0) {
+     	    var ids = properties.nodes;
+     	    var clickedNodes = data.nodes.get(ids);
+     	    console.log('clicked nodes:', clickedNodes);
+
+	    // TODO: Populate popupDiv with details of the clicked node before making it visible
+	    popupDiv.style.left = properties.pointer.DOM.x + 'px';
+     	    popupDiv.style.top = properties.pointer.DOM.y + 'px';
+     	    popupDiv.style.display = 'block';
+	} else {
+	    popupDiv.style.display = 'none'; // Hide the pop-up if it's visible
+	}
+    });
+
+    //network.on('click', function(params) {
+	// Check if you clicked on a node; if so, display the title (if any) in a popup
+	//network.interactionHandler._checkShowPopup(params.pointer.DOM);
+//alert('HERE!');
+    //}
+
+    // for (let nodeId in network.body.nodes) {
+    // 	if (nodes.hasOwnProperty(nodeId)) {
+    //  	    network.body.nodes[nodeId].on('click', function(params) {
+    // 		alert('Node clicked!')
+	    
+    // 	    // TODO: Get this working
+    // 	    var popupDiv = document.getElementById('node-popup');
+
+    // 	    // TODO: Remove
+    // 	    params.event = "[original event]";
+    // 	    console.log("Pointer: " + JSON.stringify(params.pointer.DOM));
+    // 	    popupDiv.style.left = params.pointer.DOM.x + 'px';
+    // 	    popupDiv.style.top = params.pointer.DOM.y + 'px';
+    // 	    popupDiv.style.visibility='visible';
+    // 	    popupDiv.style.display = 'inline-block';
+	
+    // 	    $(popupDiv).offset({ top: mousePos.y, left: mousePos.x });
+    // 	    var ids = properties.nodes;
+    // 	    var clickedNodes = data.nodes.get(ids);
+    // 	    console.log('clicked nodes:', clickedNodes);
+    // 	    }
+    //     });
+    // }
+
+    //network.on( 'click', function(params) {
 	// TODO: Get this working
 	// var popupDiv = document.getElementById('node-popup');
 
@@ -395,7 +445,7 @@ function create_network(container, data, options) {
 	//var ids = properties.nodes;
 	//var clickedNodes = data.nodes.get(ids);
 	//console.log('clicked nodes:', clickedNodes);
-    });
+    //});
 
     return network;
 }

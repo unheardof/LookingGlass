@@ -15,6 +15,16 @@ DATA_FILE = '/tmp/' + FILENAME
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
 
+# TODO: Get this figured out (See http://flask.pocoo.org/snippets/133/)
+# parser = argparse.ArgumentParser(description='Start the Looking Glass application')
+# parser.add_argument('--local', action='store_true', help='If provided, the script will use the local filesystem for persistence (instead of S3)')
+# args = parser.parse_args()
+    
+#app.config['local_mode'] = args.local
+#app.run()
+
+app.config['local_mode'] = True
+
 # How to run locally (note: do not use this in production): FLASK_APP=application.py flask run --host=0.0.0.0
 
 @app.route('/', methods=['GET'])
@@ -47,6 +57,12 @@ def get_graph_data():
         
     return data
 
+# TODO: Integrate MongoDB as the persistence rather than a static file
+# => could create a free DB to use
+# => https://www.mongodb.com/mongodb-4.0?jmp=homepagenull
+# => https://docs.mongodb.com/tutorials/install-mongodb-on-windows/
+# TODO: Only send the update rather than the entire graph state
+# TODO: Update the requirements.txt file
 @app.route('/update', methods=['POST'])
 def update():
     print("Received %s" % request.json)
@@ -64,6 +80,12 @@ def update():
 
     return 'ok'
 
+@app.route('/add_nmap_results', methods=['POST'])
+def add_nmap_results():
+    print("add_nmap_results: received %s" % request.json)
+
+
+# TODO: Get this to actually work or remove it
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the Looking Glass application')
     parser.add_argument('--local', action='store_true', help='If provided, the script will use the local filesystem for persistence (instead of S3)')
