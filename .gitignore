@@ -6,3 +6,5 @@ py3env/*
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+looking_glass.db
