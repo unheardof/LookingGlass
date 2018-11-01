@@ -4,86 +4,119 @@ import boto3
 import os.path
 import sys
 import json
+import datetime
 
 from .tables import ChangeLog, Node, Edge, setup_tables
 
 class DataGraph:
-    # TODO: Get rid of these
-    S3_BUCKET = 'looking-glass-data'
-    FILENAME = 'graph_data.json'
-    DATA_FILE = '/tmp/' + FILENAME
 
     def __init__(self):
-        # TODO: Change back
-        #engine = create_engine('sqlite:///looking_glass.db')
-        self.engine = create_engine('sqlite:///:memory:')
+        # Using SERIALIZABLE isolation ensures that any queried
+        # information will not change in the midst of a transaction
+        self.engine = create_engine('sqlite:///looking_glass.db', isolation_level='SERIALIZABLE')
+        
         setup_tables(self.engine)
 
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
+    # A new transaction is implicitly started when a session is first used until the session.commit() method is called
+    def create_session(self):
+        Session = sessionmaker(bind=self.engine, autocommit=False)
+        return Session()
 
-        self.nodes_by_id = {}
+    def current_graph_json(self, local_mode = True):
+        session = self.create_session()
 
-    def current_graph_json(self, local_mode=True):
-        # TODO: Pull out the list of values and convert to string
-        print('Graph:\n\n{ "nodes": %s }' %( str(self.nodes_by_id.values()) ))
+        nodes = session.query(Node).filter_by(active = True).all()
 
-        # TODO: decode all strings within each node
-        #return '{ "nodes": %s }' %( str(self.nodes_by_id.values()) )
-        return '{ "nodes": %s }' %( json.dumps(self.nodes_by_id.values()) )
+        nodes_by_id = {}
+        for node in nodes:
+            nodes_by_id[node.id] = node.serializable_dict()
         
-        # TODO: Persist nodes_by_id to file (and then DB) and then cleanup
-        #data = None
-
-        # if local_mode:
-        #     if os.path.isfile(DataGraph.DATA_FILE):
-        #         with open(DataGraph.DATA_FILE, 'r') as f:
-        #             data = f.read()
-        # else:
-        #     s3 = boto3.client('s3')
-
-        #     try:
-        #         obj = s3.get_object(Bucket=DataGraph.S3_BUCKET, Key=DataGraph.FILENAME)
-        #         data = obj['Body'].read().decode('utf-8')
-        #     except:
-        #         print('No file with key %s in the %s bucket' % (DataGraph.FILENAME, DataGraph.S3_BUCKET)) 
+        for edge in session.query(Edge).filter_by(active = True).all():
+            if 'connections' in nodes_by_id[edge.source_node_id]:
+                nodes_by_id[edge.source_node_id]['connections'].append(edge.destination_node_id)
+            else:
+                nodes_by_id[edge.source_node_id]['connections'] = [edge.destination_node_id]
+        
+        graph = {
+            'nodes': nodes_by_id.values()
+        }
             
-        # if (data == None or data.strip() == ''):
-        #     data = '{}' # Ensure that we always return valid JSON
-        
-        # return data
+        return json.dumps(graph)
 
     def upsert_node(self, node):
-        print("Node: %s" % (node))
-        
-        if node['id'] in self.nodes_by_id:
+        session = self.create_session()
+
+        current_version_number = ChangeLog.curr_version_number(session)
+        current_node_data = session.query(Node).filter_by(id = node['id'], active = True).first()
+
+        if current_node_data:
             print("Updating node with ID %s" % node['id'])
         else:
             print("Creating new node with ID %s" % node['id'])
 
-        self.nodes_by_id[node['id']] = node
-            
+        new_version_number = current_version_number + 1
+
+        new_changelog_row = ChangeLog(
+            version_number = new_version_number,
+            date_time = datetime.datetime.utcnow()
+        )
+
+        new_node = Node.from_dict(node)
+        new_node.version_number = new_version_number
+
+        session.add(new_node)
+        session.add(new_changelog_row)
+        session.commit()
+
     def add_edge(self, edge):
-        print("Edge: %s" % (edge))
+        session = self.create_session()
+        current_version_number = ChangeLog.curr_version_number(session)
 
         from_node_id = edge['from']
-        if not from_node_id in self.nodes_by_id:
+        source_node = session.query(Node).filter_by(id = from_node_id, active = True).first()
+        
+        if not source_node:
+            session.rollback()
             raise "Unable to create edge; from node with ID of %s does not exist" % from_node_id
 
-        if 'connections' in self.nodes_by_id[from_node_id]:
-            self.nodes_by_id[from_node_id]['connections'].append(edge['to'])
-        else:
-            self.nodes_by_id[from_node_id]['connections'] = [edge['to']]
+        new_version_number = current_version_number + 1
+
+        new_changelog_row = ChangeLog(
+            version_number = new_version_number,
+            date_time = datetime.datetime.utcnow()
+        )
+
+        new_edge = Edge(
+            source_node_id = edge['from'],
+            destination_node_id = edge['to'],
+            version_number = new_version_number,
+            active = True
+            )
+        
+        session.add(new_edge)
+        session.add(new_changelog_row)
+        session.commit()
 
     def remove_node(self, node_id):
-        print("Removing Node: %s" % (node_id))
-        del self.nodes_by_id[node_id]
+        session = self.create_session()
+        edges_from_node = session.query(Edge).filter_by(source_node_id = node_id, active = True).all()
+        
+        for edge in edges_from_node:
+            edge.active = False
+
+        node = session.query(Node).filter_by(id = node_id).first()
+        node.active = False
+
+        session.add_all(edges_from_node)
+        session.add(node)
+        session.commit()
 
     def remove_edge(self, from_node_id, to_node_id):
-        print("Removing edge from: %s to %s" % (from_node_id, to_node_id))
-        if from_node_id in self.nodes_by_id:
-            self.nodes_by_id[from_node_id]['connections'].remove(to_node_id)
-        else:
-            print("Edge from %s to %s not found; must have already been removed" % (from_node_id, to_node_id))
+        session = self.create_session()
+        edge = session.query(Edge).filter_by(source_node_id = from_node_id, active = True).first()
+        edge.active = False
+        session.add(edge)
+        session.commit()
+        
 
     # TODO: add functions for merging additional data (NMAP, PCAP, ARP, etc.) into the graph data

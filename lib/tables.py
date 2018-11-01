@@ -1,6 +1,7 @@
 import datetime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, ForeignKey, Integer, Float, DateTime, String
+from sqlalchemy import Column, ForeignKey, Integer, Float, DateTime, String, Boolean
+from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
@@ -11,7 +12,11 @@ class ChangeLog(Base):
     version_number = Column(Integer, primary_key=True)
 
     # Index on date_time to allow efficient data-based queries
-    date_time = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    date_time = Column(DateTime, default=datetime.datetime.utcnow(), index=True)
+
+    @staticmethod
+    def curr_version_number(session):
+        return session.query(ChangeLog).order_by(ChangeLog.version_number.desc()).first().version_number
 
 class Node(Base):
     __tablename__ = 'nodes'
@@ -26,18 +31,49 @@ class Node(Base):
     x_coordinate = Column(Float)
     y_coordinate = Column(Float)
     group = Column(String)
+    active = Column(Boolean)
 
-    def json(self):
-        # TODO: Add to Node; work in Edges; or do via a query
-        pass
-    
+    def serializable_dict(self):
+        d = self.__dict__
+        del d['_sa_instance_state']
+
+        return d
+
+    @staticmethod
+    def from_dict(node):
+        return Node(
+            id = node.get('id'),
+            version_number = node.get('version_number'),
+            label = node.get('label'),
+            title = node.get('title'),
+            x_coordinate = node.get('x'),
+            y_coordinate = node.get('y'),
+            group = node.get('group'),
+            active = True
+        )
+
 class Edge(Base):
     __tablename__ = 'edges'
 
-    source_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key=True)
-    destination_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key=True)
-    version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key=True)
+    source_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
+    destination_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
+    version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
+    active = Column(Boolean)
 
 def setup_tables(engine):
-    # TODO: Add check on whether the tables exist already
-    Base.metadata.create_all(engine)
+    if not engine.dialect.has_table(engine, 'change_log'):
+        Base.metadata.create_all(engine)
+
+    # Initialize changelog table
+    Session = sessionmaker(bind=engine, autocommit=False)
+    session = Session()
+    if session.query(ChangeLog).count() == 0:
+        first_changelog_row = ChangeLog(
+            version_number = 0,
+            date_time = datetime.datetime.utcnow()
+        )
+
+        session.add(first_changelog_row)
+
+    session.commit()
+        
