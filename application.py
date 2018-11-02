@@ -7,15 +7,7 @@ from lib.data_graph import DataGraph
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
 
-# TODO: Update the requirements.txt file to include SQL Alchemy
-# TODO: Get this figured out (See http://flask.pocoo.org/snippets/133/)
-# parser = argparse.ArgumentParser(description='Start the Looking Glass application')
-# parser.add_argument('--local', action='store_true', help='If provided, the script will use the local filesystem for persistence (instead of S3)')
-# args = parser.parse_args()
-    
-#app.config['local_mode'] = args.local
-#app.run()
-
+# TODO: Use or remove
 app.config['local_mode'] = True
 
 data_graph = DataGraph()
@@ -31,7 +23,7 @@ def index():
 
 @app.route('/graph_data', methods=['GET'])
 def get_graph_data():
-    return data_graph.current_graph_json(app.config['local_mode'])
+    return data_graph.current_graph_json()
 
 @app.route('/upsert_node', methods=['POST'])
 def upsert_node():

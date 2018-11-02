@@ -3,6 +3,7 @@ var edges = null;
 var network = null;
 var seed = 2; // Want the nodes to be rendered the same way every time (rather than based off a random seed)
 var data = {};
+var currGraphVersion = 0;
 
 var options = {
     locale: 'en',
@@ -109,11 +110,15 @@ var options = {
 	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 
-	    document.getElementById('cancelButton').onclick = cancelEdit.bind(this,callback);
+	    document.getElementById('cancelButton').onclick = cancelEdit.bind(this, callback);
 	    document.getElementById('network-popUp').style.display = 'block';
 	},
-        // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
+
 	addEdge: function (data, callback) {
+	    // At present, edge labels are not used for anything
+            // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
+	    data.label = '';
+
 	    if (data.from == data.to) {
 		var r = confirm("Do you want to connect the node to itself?");
 		if (r == true) {
@@ -167,7 +172,6 @@ function cancelEdit(callback) {
 }
 
 function postGraphData(methodName, data) {
-    // TODO: Figure out if this bit is still needed
     data.title = document.getElementById('node-ip').value;
     data.label = document.getElementById('node-hostname').value;
     data.group = document.getElementById('node-type').value;
@@ -187,8 +191,8 @@ function postGraphData(methodName, data) {
 
 function saveNode(data, callback) {
     clearPopUp();
-    callback(data);
     postGraphData("upsert_node", data);
+    callback(data);
 }
 
 function saveEdge(data) {
@@ -224,7 +228,25 @@ function create_network(container, data, options) {
      	    var ids = properties.nodes;
      	    var clickedNodes = data.nodes.get(ids);
 
-	    // TODO: Populate popupDiv with details of the clicked node before making it visible
+	    var displayLines = [];
+
+	    clickedNodes.forEach(
+		function(elem, index, array) {
+		    // Add separations between data for different nodes if multiple nodes have been selected
+		    if(clickedNodes.length > 1) {
+			displayLines.push('<hr/>');
+		    }
+
+		    displayLines.push('IP: ' + elem['title']);
+		    displayLines.push('Hostname: ' + elem['label']);
+		    // TODO: Add additional information and functionality once it is available (such as any data from nmap, etc.)
+
+		    // TODO: Add support for interacting with hosts (when there is an agent on the host to interact with); ex: could launch a nmap scan from the console or spawn a serpent shell
+		}
+	    );
+
+	    document.getElementById('node-popup').innerHTML = displayLines.join('<br>');
+
 	    popupDiv.style.left = properties.pointer.DOM.x + 'px';
      	    popupDiv.style.top = properties.pointer.DOM.y + 'px';
      	    popupDiv.style.display = 'block';
@@ -233,74 +255,33 @@ function create_network(container, data, options) {
 	}
     });
 
-    //network.on('click', function(params) {
-	// Check if you clicked on a node; if so, display the title (if any) in a popup
-	//network.interactionHandler._checkShowPopup(params.pointer.DOM);
-//alert('HERE!');
-    //}
-
-    // for (let nodeId in network.body.nodes) {
-    // 	if (nodes.hasOwnProperty(nodeId)) {
-    //  	    network.body.nodes[nodeId].on('click', function(params) {
-    // 		alert('Node clicked!')
-	    
-    // 	    // TODO: Get this working
-    // 	    var popupDiv = document.getElementById('node-popup');
-
-    // 	    // TODO: Remove
-    // 	    params.event = "[original event]";
-    // 	    console.log("Pointer: " + JSON.stringify(params.pointer.DOM));
-    // 	    popupDiv.style.left = params.pointer.DOM.x + 'px';
-    // 	    popupDiv.style.top = params.pointer.DOM.y + 'px';
-    // 	    popupDiv.style.visibility='visible';
-    // 	    popupDiv.style.display = 'inline-block';
-	
-    // 	    $(popupDiv).offset({ top: mousePos.y, left: mousePos.x });
-    // 	    var ids = properties.nodes;
-    // 	    var clickedNodes = data.nodes.get(ids);
-    // 	    console.log('clicked nodes:', clickedNodes);
-    // 	    }
-    //     });
-    // }
-
-    //network.on( 'click', function(params) {
-	// TODO: Get this working
-	// var popupDiv = document.getElementById('node-popup');
-
-	// // TODO: Remove
-	// params.event = "[original event]";
-	// console.log("Pointer: " + JSON.stringify(params.pointer.DOM));
-	// popupDiv.style.left = params.pointer.DOM.x + 'px';
-	// popupDiv.style.top = params.pointer.DOM.y + 'px';
-	// popupDiv.style.visibility='visible';
-	// popupDiv.style.display = 'inline-block';
-	
-	//$(popupDiv).offset({ top: mousePos.y, left: mousePos.x });
-	//var ids = properties.nodes;
-	//var clickedNodes = data.nodes.get(ids);
-	//console.log('clicked nodes:', clickedNodes);
-    //});
-
     return network;
 }
 
 function refreshGraph() {
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
-	// TODO: Add check on if the version number has increased
         if (this.readyState == 4 && this.status == 200) {
             var inputData = JSON.parse(xmlHttp.responseText);
 
-	    var data = {
-                nodes: getNodeData(inputData['nodes']),
-                edges: getEdgeData(inputData['nodes'])
-	    }
-		
-	    var container = document.getElementById('mynetwork');
-	    network = create_network(container, data, options);
+	    if (parseInt(inputData['current_version_number']) > currGraphVersion) {
+		// Hide the node data pop-up
+		var popupDiv = document.getElementById('node-popup');
+		popupDiv.style.display = 'none';
 
-	    // TODO: put back once the version check has been added
-	    // setTimeout(refreshGraph, 100);
+		currGraphVersion = parseInt(inputData['current_version_number']);
+
+		var data = {
+                    nodes: getNodeData(inputData['nodes']),
+                    edges: getEdgeData(inputData['nodes'])
+		}
+		
+		var container = document.getElementById('mynetwork');
+		network = create_network(container, data, options);
+	    }
+	
+	    // TODO: Tune this
+	    setTimeout(refreshGraph, 100);
 	}
     };
 

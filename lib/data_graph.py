@@ -22,10 +22,11 @@ class DataGraph:
         Session = sessionmaker(bind=self.engine, autocommit=False)
         return Session()
 
-    def current_graph_json(self, local_mode = True):
+    def current_graph_json(self):
         session = self.create_session()
 
         nodes = session.query(Node).filter_by(active = True).all()
+        current_version_number = ChangeLog.curr_version_number(session)
 
         nodes_by_id = {}
         for node in nodes:
@@ -36,8 +37,9 @@ class DataGraph:
                 nodes_by_id[edge.source_node_id]['connections'].append(edge.destination_node_id)
             else:
                 nodes_by_id[edge.source_node_id]['connections'] = [edge.destination_node_id]
-        
+
         graph = {
+            'current_version_number': current_version_number,
             'nodes': nodes_by_id.values()
         }
             
@@ -118,5 +120,4 @@ class DataGraph:
         session.add(edge)
         session.commit()
         
-
     # TODO: add functions for merging additional data (NMAP, PCAP, ARP, etc.) into the graph data
