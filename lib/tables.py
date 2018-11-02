@@ -9,14 +9,24 @@ class ChangeLog(Base):
     __tablename__ = 'change_log'
 
     # Authoritative graph version number (i.e. logical time)
-    version_number = Column(Integer, primary_key=True)
+    version_number = Column(Integer, primary_key = True)
 
     # Index on date_time to allow efficient data-based queries
-    date_time = Column(DateTime, default=datetime.datetime.utcnow(), index=True)
+    date_time = Column(DateTime, default=datetime.datetime.utcnow(), index = True)
 
     @staticmethod
     def curr_version_number(session):
         return session.query(ChangeLog).order_by(ChangeLog.version_number.desc()).first().version_number
+
+# TODO: Start using
+# Used for associating additional data, such as open ports, operating system version, etc.
+# with a given node
+class AdditionalNodeData(Base):
+    __table__ = 'additional_node_data'
+
+    node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
+    data_key = Column(String)
+    data_value = Column(String)
 
 class Node(Base):
     __tablename__ = 'nodes'
@@ -24,8 +34,8 @@ class Node(Base):
     # Composite key on node (ID, version number) to allow for keeping a historical record of changes to the graph;
     # this will allow for undo-redo functionality as well as point-in-time playbacks / lookbacks using the change_log table
     # to get the date-time when the change was made
-    id = Column(Integer, primary_key=True)
-    version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key=True)
+    id = Column(Integer, primary_key = True)
+    version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
     label = Column(String)
     title = Column(String)
     x_coordinate = Column(Float)
