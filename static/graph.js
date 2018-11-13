@@ -171,11 +171,7 @@ function cancelEdit(callback) {
     callback(null);
 }
 
-function postGraphData(methodName, data) {
-    data.title = document.getElementById('node-ip').value;
-    data.label = document.getElementById('node-hostname').value;
-    data.group = document.getElementById('node-type').value;
-
+function postData(methodName, data) {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", methodName, true);
     xhttp.setRequestHeader("Content-type", "application/json");
@@ -187,6 +183,27 @@ function postGraphData(methodName, data) {
     };
 
     xhttp.send(JSON.stringify(data, undefined, 2));
+}
+
+function postGraphData(methodName, data) {
+    data.title = document.getElementById('node-ip').value;
+    data.label = document.getElementById('node-hostname').value;
+    data.group = document.getElementById('node-type').value;
+    postData(methodName, data);
+}
+
+function openNmapFileSelector() {
+    fileSelector.click();
+}
+
+function uploadNmapFiles(files) {
+    var reader = new FileReader();
+
+    reader.onload = function(evt) {
+	postData('upload_nmap_data', evt.target.result);
+    };
+
+    reader.readAsText(files[0]);
 }
 
 function saveNode(data, callback) {

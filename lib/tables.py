@@ -22,7 +22,7 @@ class ChangeLog(Base):
 # Used for associating additional data, such as open ports, operating system version, etc.
 # with a given node
 class AdditionalNodeData(Base):
-    __table__ = 'additional_node_data'
+    __tablename__ = 'additional_node_data'
 
     node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
     data_key = Column(String)

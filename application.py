@@ -49,10 +49,11 @@ def remove_edge():
     data_graph.remove_edge(request.json['from'], request.json['to'])
     return 'ok'
 
-@app.route('/add_nmap_results', methods=['POST'])
-def add_nmap_results():
+@app.route('/upload_nmap_data', methods=['POST'])
+def upload_nmap_data():
     # TODO: Implement
-    print("add_nmap_results: received %s" % request.json)
+    print("upload_nmap_data: received %s" % request.json)
+    return 'ok'
 
 # TODO: Get this to actually work or remove it
 if __name__ == '__main__':
