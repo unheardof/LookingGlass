@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template, send_from_directory
 
 import argparse
+import uuid
+
+from NmapQueryTool.nmap_query import ScanData
 
 from lib.data_graph import DataGraph
 
@@ -51,8 +54,33 @@ def remove_edge():
 
 @app.route('/upload_nmap_data', methods=['POST'])
 def upload_nmap_data():
-    # TODO: Implement
     print("upload_nmap_data: received %s" % request.json)
+
+    data = ScanData.create_from_nmap_data(request.json)
+    
+    for host in data.host_data_list():
+        node = data_graph.get_node_by_ip(host.ip)
+
+        node_updated = False
+        
+        if node == None:
+            node_updated = True
+            node = { 'id': str(uuid.uuid4()) }
+
+        host_dict = host.as_dict()
+        
+        for key in host_dict:
+            if not key in node:
+                node[key] = host_dict[key]
+                node_updated = True
+            elif node[key] != host_dict[key]:
+                print('WARN: Node with IP %s currently has %s data (%s) which does not match the data found by the nmap scan (%s); ignoring the new data' % (host.ip, key, str(node[key]), str(host_dict[key])))
+            else:
+                print("Node with IP of %s already has the same %s data; no action necessary" % (host.ip, key))
+
+        if node_updated:
+            data_graph.upsert_node(node)
+        
     return 'ok'
 
 # TODO: Get this to actually work or remove it

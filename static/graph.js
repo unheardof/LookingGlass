@@ -160,6 +160,16 @@ function draw() {
     network = create_network(container, data, options);
 }
 
+function openControlPanel() {
+    document.getElementById("controlPanel").style.display = "block";
+    document.getElementById("openControlPanelSpan").style.display = "none";
+}
+
+function closeControlPanel() {
+    document.getElementById("controlPanel").style.display = "none";
+    document.getElementById("openControlPanelSpan").style.display = "block";
+}
+
 function clearPopUp() {
     document.getElementById('saveButton').onclick = null;
     document.getElementById('cancelButton').onclick = null;
@@ -186,8 +196,8 @@ function postData(methodName, data) {
 }
 
 function postGraphData(methodName, data) {
-    data.title = document.getElementById('node-ip').value;
-    data.label = document.getElementById('node-hostname').value;
+    data.ip = document.getElementById('node-ip').value;
+    data.hostname = document.getElementById('node-hostname').value;
     data.group = document.getElementById('node-type').value;
     postData(methodName, data);
 }
@@ -206,8 +216,23 @@ function uploadNmapFiles(files) {
     reader.readAsText(files[0]);
 }
 
+function delete_view_specific_data_attrs(data) {
+    delete data.font;
+    delete data.color;
+    delete data.shapeProperties;
+    delete data.y_coordinate;
+    delete data.x_coordinate;
+    delete data.scaling;
+    delete data.y;
+    delete data.x;
+    delete data.icon;
+
+    return data;
+}
+
 function saveNode(data, callback) {
     clearPopUp();
+    data = delete_view_specific_data_attrs(data);
     postGraphData("upsert_node", data);
     callback(data);
 }
@@ -311,6 +336,8 @@ function getNodeData(data) {
 
     data.forEach(
 	function(elem, index, array) {
+	    elem.title = elem.ip;
+	    elem.label = elem.hostname;
             networkNodes.push(elem);
 	}
     );

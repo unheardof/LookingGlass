@@ -6,7 +6,7 @@ import sys
 import json
 import datetime
 
-from .tables import ChangeLog, Node, Edge, setup_tables
+from .tables import ChangeLog, Node, AdditionalNodeData, Edge, setup_tables
 
 class DataGraph:
 
@@ -22,15 +22,30 @@ class DataGraph:
         Session = sessionmaker(bind=self.engine, autocommit=False)
         return Session()
 
+    def node_as_dict_with_additional_data(self, session, node):
+        additional_node_data_list = session.query(AdditionalNodeData).filter_by(node_id = node.id).all()
+        node_data = node.serializable_dict()
+
+        for additional_node_data in additional_node_data_list:
+            node_data[additional_node_data.data_key] = additional_node_data.data_value
+
+        return node_data
+
     def current_graph_json(self):
         session = self.create_session()
 
         nodes = session.query(Node).filter_by(active = True).all()
+
+        # TODO: Remove
+        #node_ids = [ n.id for n in nodes ]
+        #print("Found nodes:\n\n%s" % '\n'.join(node_ids))
+        
         current_version_number = ChangeLog.curr_version_number(session)
 
         nodes_by_id = {}
         for node in nodes:
-            nodes_by_id[node.id] = node.serializable_dict()
+            node_data = self.node_as_dict_with_additional_data(session, node)
+            nodes_by_id[node.id] = node_data
         
         for edge in session.query(Edge).filter_by(active = True).all():
             if 'connections' in nodes_by_id[edge.source_node_id]:
@@ -45,17 +60,39 @@ class DataGraph:
             
         return json.dumps(graph)
 
-    def upsert_node(self, node):
+    def get_node_by_ip(self, node_ip):
+        session = self.create_session()
+        node = session.query(Node).filter_by(ip = node_ip, active = True).first()
+
+        if node:
+            node = self.node_as_dict_with_additional_data(session, node)
+
+        return node
+    
+    def upsert_node(self, node_dict):
+        # TODO: Remove
+        print("Upserting node: %s" % str(node_dict))
+        
         session = self.create_session()
 
+        # Lock the existing node record
+        if 'id' in node_dict:
+            for n in session.query(Node).filter_by(id = node_dict['id'], active = True).all():
+                n.active = False
+                session.add(n)
+
+            session.query(Node).filter_by(id = node_dict['id'], active = True).first()
+
+        # Split out any AdditionalNodeData and store that in that table accordingly
+        node_obj_dict = {}
+        additional_node_data = {}
+        for key in node_dict:
+            if key in Node.__table__.columns:
+                node_obj_dict[key] = node_dict[key]
+            else:
+                additional_node_data[key] = node_dict[key]
+
         current_version_number = ChangeLog.curr_version_number(session)
-        current_node_data = session.query(Node).filter_by(id = node['id'], active = True).first()
-
-        if current_node_data:
-            print("Updating node with ID %s" % node['id'])
-        else:
-            print("Creating new node with ID %s" % node['id'])
-
         new_version_number = current_version_number + 1
 
         new_changelog_row = ChangeLog(
@@ -63,11 +100,21 @@ class DataGraph:
             date_time = datetime.datetime.utcnow()
         )
 
-        new_node = Node.from_dict(node)
+        new_node = Node.from_dict(node_obj_dict)
         new_node.version_number = new_version_number
 
         session.add(new_node)
         session.add(new_changelog_row)
+        
+        for key in additional_node_data:
+            session.add(
+                AdditionalNodeData(
+                    node_id = new_node.id,
+                    data_key = key,
+                    data_value = str(additional_node_data[key])
+                )
+            )
+
         session.commit()
 
     def add_edge(self, edge):

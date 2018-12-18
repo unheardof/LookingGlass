@@ -16,12 +16,39 @@
 	  background-color: #000000;
 	  height: 100%;
       }
+      #controlPanel {
+          display: none;
+          background-color: #666666;
+          height: 100%;
+          width: 225px;
+          position: absolute;
+          left: 0;
+          top: 0;
+          z-index: 299;
+          padding: 35px 15px 25px 15px;
+      }
+      .closeButton {
+          position: absolute;
+          top: 0;
+          font-size: 25px;
+          right: 10px;
+      }
+      .controlButton {
+	  font: bold 18px verdana;
+          display: block;
+          position: absolute;
+      } 
+      #openControlPanelSpan {
+          position: absolute;
+          left: 0px;
+          top: 50%;
+          font-size: 30px;
+          cursor: pointer;
+      } 
       #mynetwork {
 	  position:relative;
-	  min-height: 95%;
-	  width: 100%;
-	  height: auto;
-	  height: 95%;
+	  height: 100%;
+	  //height: auto;
 	  margin: 0 auto;
 	  background-color: #000000;
       }
@@ -80,24 +107,7 @@
 	  padding:5px;
 	  text-align: center;
 	  z-index: 1;
-      }
-
-      #uploadNmapDataInput {
-  	  //background-color: #fcfcfc;
-	  border: 1px solid #cccccc;
-	  font-family: verdana;
-	  font-size: 12px;
-	  -moz-border-radius: 15px;
-	  border-radius: 15px;
-	  height:24px;
-	  margin-left: 10px;
-	  padding: 0px 8px 0px 8px;
-	       -webkit-touch-callout: none;
-	       -webkit-user-select: none;
-	       -khtml-user-select: none;
-	       -moz-user-select: none;
-	       -ms-user-select: none;
-      }
+      } 
     </style>
 
     <script type="text/javascript" src="static/js/vis-4.21.0/dist/vis.js"></script>
@@ -136,14 +146,20 @@
       <input type="button" value="cancel" id="cancelButton" />
     </div>
 
-    <div id="mynetwork"></div>
+    <div style="height: 100%; width: 100%">
+      <div id="mynetwork"></div>
 
-    <div id="control-panel">
-      <!-- Based on code from https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications -->
+      <span id="openControlPanelSpan" onclick="openControlPanel()">&#9776;</span>
 
-      <!-- TODO: Only accept text files -->
-      <input type="file" id="fileSelector" style="display:none" onchange="uploadNmapFiles(this.files)" />
-      <input type="button" id="nmapFileSelectOpen" value="Upload NMAP data" onclick="openNmapFileSelector()" />
+      <div class="controlPanelClass" id="controlPanel">
+	<!-- Based on code from https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications -->
+
+	<!-- TODO: Only accept text files -->
+	<input type="file" id="fileSelector" style="display:none" onchange="uploadNmapFiles(this.files)" />
+
+	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
+	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a>
+      </div>
     </div>
   </body>
 </html>
