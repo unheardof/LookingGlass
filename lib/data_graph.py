@@ -33,13 +33,7 @@ class DataGraph:
 
     def current_graph_json(self):
         session = self.create_session()
-
         nodes = session.query(Node).filter_by(active = True).all()
-
-        # TODO: Remove
-        #node_ids = [ n.id for n in nodes ]
-        #print("Found nodes:\n\n%s" % '\n'.join(node_ids))
-        
         current_version_number = ChangeLog.curr_version_number(session)
 
         nodes_by_id = {}
@@ -70,9 +64,6 @@ class DataGraph:
         return node
     
     def upsert_node(self, node_dict):
-        # TODO: Remove
-        print("Upserting node: %s" % str(node_dict))
-        
         session = self.create_session()
 
         # Lock the existing node record

@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, send_from_directory
 
 import argparse
+import re
 import uuid
 
 from NmapQueryTool.nmap_query import ScanData
@@ -68,6 +69,12 @@ def upload_nmap_data():
             node = { 'id': str(uuid.uuid4()) }
 
         host_dict = host.as_dict()
+
+        if 'os_list' in host_dict:
+            if re.match('.*[Ww]indows.*', host_dict['os_list']):
+                node['group'] = 'windows_host'
+            elif re.match('.*[Ll]inux.*', host_dict['os_list']):
+                node['group'] = 'linux_host'
         
         for key in host_dict:
             if not key in node:

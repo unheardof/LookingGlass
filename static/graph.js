@@ -226,6 +226,12 @@ function delete_view_specific_data_attrs(data) {
     delete data.y;
     delete data.x;
     delete data.icon;
+    delete data.shape;
+    delete data.connections;
+    delete data.image;
+    delete data.shadow;
+    delete data.fixed;
+    delete data.margin;
 
     return data;
 }
@@ -281,7 +287,43 @@ function create_network(container, data, options) {
 
 		    displayLines.push('IP: ' + elem['title']);
 		    displayLines.push('Hostname: ' + elem['label']);
-		    // TODO: Add additional information and functionality once it is available (such as any data from nmap, etc.)
+
+		    if('device_types' in elem) {
+			device_type_list = JSON.parse(elem['device_types']);
+			if(device_type_list.length != 0) {
+			    displayLines.push('<hr>Device Types:');
+			    for(var device in device_type_list) {
+				displayLines.push(device);
+			    }
+			}
+		    }
+		    
+		    if('os_list' in elem && elem['os_list'].length != 0) {
+			os_list = JSON.parse(elem['os_list']);
+			if(os_list.length != 0) {
+			    displayLines.push('<hr>OS Info:');
+			    for(var os in os_list) {
+				displayLines.push(os);
+			    }
+			}
+		    }
+
+		    if('port_data' in elem) {
+			port_data_obj_str = elem['port_data'].replace(/'/gi, "\"");
+			var portData = JSON.parse(port_data_obj_str);
+
+			for (var portNumber in portData) {
+			    var dataForPort = portData[portNumber];
+			    
+			    displayLines.push('<hr>Port Number: ' + portNumber);
+
+			    for (var dataKey in dataForPort) {
+				if(dataForPort[dataKey].length != 0) {
+				    displayLines.push(dataKey + ': ' + dataForPort[dataKey]);
+				}
+			    }
+			}
+		    }
 
 		    // TODO: Add support for interacting with hosts (when there is an agent on the host to interact with); ex: could launch a nmap scan from the console or spawn a serpent shell
 		}
