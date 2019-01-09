@@ -71,9 +71,12 @@ def upload_nmap_data():
         host_dict = host.as_dict()
 
         if 'os_list' in host_dict:
-            if re.match('.*[Ww]indows.*', host_dict['os_list']):
+            windows_os_pattern = re.compile('.*[Ww]indows.*')
+            linux_os_pattern = re.compile('.*[Ll]inux.*')
+            
+            if any([ windows_os_pattern.match(x) for x in host_dict['os_list'] ]):
                 node['group'] = 'windows_host'
-            elif re.match('.*[Ll]inux.*', host_dict['os_list']):
+            elif any([ linux_os_pattern.match(x) for x in host_dict['os_list'] ]):
                 node['group'] = 'linux_host'
         
         for key in host_dict:
