@@ -3,23 +3,26 @@
   <head>
     <title>LookingGlass Register</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
   </head>
   <body>
-    <div id="register-containter" >
-      {% if error %}
-        <div class="isa_error">
-	  <i class="fa fa-info-circle"></i>
-          <p class=error><strong>Error:</strong> {{ error }}
-	</div>
-      {% endif %}
+    {% if error %}
+    <div class="isa_error">
+      <p class=error><strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
 
-      <h1>Please Register</h1><br>
+    <div class="centered-div" id="register-containter" >
+      <h1>Registration</h1>
       <form action="/register" method="post">
-	Username: <input type="text" name="username" value="{{request.form.username}}"><br>
-	Display Name: <input type="text" name="displayname" value="{{request.form.displayname}}"><br>
-	Password: <input type="password" name="password" value="{{request.form.password}}"><br>
-	Confirm Password: <input type="password" name="confirm" value="{{request.form.confirm}}"><br>
-
+	<label for="username">Username:</label>
+	<input type="text" name="username" value="{{request.form.username}}">
+	<label for="displayname">Display Name:</label>
+	<input type="text" name="displayname" value="{{request.form.displayname}}">
+	<label for="password">Password:</label>
+	<input type="password" name="password" value="{{request.form.password}}">
+	<label for="confirm">Confirm Password:</label>
+	<input type="password" name="confirm" value="{{request.form.confirm}}">
 	{{ form.csrf_token }}
 	<input type="submit" value="Register">
       </form>

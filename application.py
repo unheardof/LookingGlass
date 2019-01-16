@@ -178,11 +178,6 @@ def upload_nmap_data():
         
     return 'ok'
 
-# TODO: Get this to actually work or remove it
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Start the Looking Glass application')
-    parser.add_argument('--local', action='store_true', help='If provided, the script will use the local filesystem for persistence (instead of S3)')
-    args = parser.parse_args()
-    
-    app.config['local_mode'] = args.local
-    app.run()
+    # TODO: pip install pyopenssl
+    app.run(ssl_context='adhoc')

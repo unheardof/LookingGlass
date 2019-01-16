@@ -1,7 +1,8 @@
 /* From https://isabelcastillo.com/error-info-messages-css */
 .isa_info, .isa_success, .isa_warning, .isa_error {
-    margin: 10px 0px;
     padding: 12px;
+    font-size: 20px;
+    height: fit-contents;
 }
 
 .isa_info {
