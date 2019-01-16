@@ -181,14 +181,21 @@ function cancelEdit(callback) {
     callback(null);
 }
 
+function getCsrfToken() {
+    return document.head.querySelector("meta[name='csrf-token']").getAttribute("content");
+}
+
 function postData(methodName, data) {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", methodName, true);
     xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.setRequestHeader("X-CSRFToken", getCsrfToken());
 
     xhttp.onreadystatechange = function() {
      	if (this.readyState == 4 && this.status == 200) {
 	    refreshGraph();
+	} else if (this.status != 200) {
+	    console.error(xhttp.responseText);
 	}
     };
 
@@ -299,11 +306,13 @@ function create_network(container, data, options) {
 		    }
 		    
 		    if('os_list' in elem && elem['os_list'].length != 0) {
-			os_list = JSON.parse(elem['os_list']);
+			os_list_str = elem['os_list'].replace(/'/g, "\"");
+
+			os_list = JSON.parse(os_list_str);
 			if(os_list.length != 0) {
 			    displayLines.push('<hr>OS Info:');
-			    for(var os in os_list) {
-				displayLines.push(os);
+			    for(var i in os_list) {
+				displayLines.push(os_list[i]);
 			    }
 			}
 		    }
@@ -364,7 +373,6 @@ function refreshGraph() {
 		network = create_network(container, data, options);
 	    }
 	
-	    // TODO: Tune this
 	    setTimeout(refreshGraph, 100);
 	}
     };

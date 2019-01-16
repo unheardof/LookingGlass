@@ -6,7 +6,7 @@ import sys
 import json
 import datetime
 
-from .tables import ChangeLog, Node, AdditionalNodeData, Edge, setup_tables
+from .tables import ChangeLog, Node, AdditionalNodeData, Edge, User, setup_tables
 
 class DataGraph:
 
@@ -21,7 +21,17 @@ class DataGraph:
     def create_session(self):
         Session = sessionmaker(bind=self.engine, autocommit=False)
         return Session()
+    
+    def find_user_by_username(self, user_name):
+        return self.create_session().query(User).filter_by(username = user_name).first()
 
+    def create_user(self, username, password, display_name):
+        session = self.create_session()
+        
+        new_user = User(username, password, display_name)
+        session.add(new_user)
+        session.commit()
+    
     def node_as_dict_with_additional_data(self, session, node):
         additional_node_data_list = session.query(AdditionalNodeData).filter_by(node_id = node.id).all()
         node_data = node.serializable_dict()
@@ -51,7 +61,7 @@ class DataGraph:
             'current_version_number': current_version_number,
             'nodes': nodes_by_id.values()
         }
-            
+
         return json.dumps(graph)
 
     def get_node_by_ip(self, node_ip):

@@ -1,10 +1,40 @@
 import datetime
 
+from flask_login import UserMixin
+
+import bcrypt
+import uuid
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, ForeignKey, Integer, Float, DateTime, String, Boolean
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
+
+class User(UserMixin, Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key = True)
+    username = Column(String(30), nullable=False)
+    display_name = Column(String(300), nullable=True)
+    password = Column(String(300), nullable=False)
+
+    def __init__(self, username, password, display_name = None):
+        self.username = username
+        self.password = bcrypt.hashpw(password, bcrypt.gensalt())
+        self.display_name = display_name
+
+    def validate_password(self, password):
+        return bcrypt.checkpw(password, self.password)
+
+    def get_id(self):
+        return self.id
+
+    def display_name(self):
+        if self.display_name is None:
+            return self.username
+        else:
+            return self.display_name
 
 class ChangeLog(Base):
     __tablename__ = 'change_log'

@@ -3,6 +3,8 @@ botocore==1.10.22
 click==6.7
 docutils==0.14
 Flask==1.0.2
+flask-login
+flask-wtf
 itsdangerous==0.24
 Jinja2==2.10
 jmespath==0.9.3
@@ -12,3 +14,5 @@ s3transfer==0.1.13
 six==1.11.0
 Werkzeug==0.14.1
 SQLAlchemy==1.2.12
+bcrypt
+passlib
