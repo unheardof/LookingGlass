@@ -58,7 +58,9 @@
 	<input type="file" id="fileSelector" style="display:none" onchange="uploadNmapFiles(this.files)" />
 
 	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
-	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a>
+	<h1>Hi {{ current_user.display_name }}</h1><hr><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="logoutControl" onclick="logout()">Logout</a>
       </div>
     </div>
   </body>

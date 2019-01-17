@@ -16,7 +16,7 @@ class User(UserMixin, Base):
 
     id = Column(Integer, primary_key = True)
     username = Column(String(30), nullable=False)
-    display_name = Column(String(300), nullable=True)
+    display_name = Column(String(300), nullable=False)
     password = Column(String(300), nullable=False)
 
     def __init__(self, username, password, display_name = None):
@@ -29,12 +29,6 @@ class User(UserMixin, Base):
 
     def get_id(self):
         return self.id
-
-    def display_name(self):
-        if self.display_name is None:
-            return self.username
-        else:
-            return self.display_name
 
 class ChangeLog(Base):
     __tablename__ = 'change_log'

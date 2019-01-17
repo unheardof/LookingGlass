@@ -4,6 +4,7 @@ var network = null;
 var seed = 2; // Want the nodes to be rendered the same way every time (rather than based off a random seed)
 var data = {};
 var currGraphVersion = 0;
+var keepGraphUpToDate = true;
 
 var options = {
     locale: 'en',
@@ -352,21 +353,25 @@ function create_network(container, data, options) {
 }
 
 function refreshGraph() {
+    if (!keepGraphUpToDate) {
+	return null;
+    }
+    
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            var inputData = JSON.parse(xmlHttp.responseText);
+        if (this.readyState == 4 && this.status == 200 && keepGraphUpToDate) {
+            var graphData = JSON.parse(xmlHttp.responseText);
 
-	    if (parseInt(inputData['current_version_number']) > currGraphVersion) {
+	    if (parseInt(graphData['current_version_number']) > currGraphVersion) {
 		// Hide the node data pop-up
 		var popupDiv = document.getElementById('node-popup');
 		popupDiv.style.display = 'none';
 
-		currGraphVersion = parseInt(inputData['current_version_number']);
+		currGraphVersion = parseInt(graphData['current_version_number']);
 
 		var data = {
-                    nodes: getNodeData(inputData['nodes']),
-                    edges: getEdgeData(inputData['nodes'])
+                    nodes: getNodeData(graphData['nodes']),
+                    edges: getEdgeData(graphData['nodes'])
 		}
 		
 		var container = document.getElementById('mynetwork');
@@ -444,4 +449,12 @@ function objectToArray(obj) {
 function init() {
     draw(); 
     refreshGraph(); // Do an initial load of the current graph data
+}
+
+function logout() {
+    // TODO: Verify that this only signs out the current user for the session
+    // No additional data needs to be send with the logout request
+    keepGraphUpToDate = false;
+    postData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
+    window.location.href = '/login';
 }

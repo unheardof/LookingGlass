@@ -1,12 +1,13 @@
 # TODO: Send all traffic over HTTPS
 
 from flask import Flask, request, render_template, send_from_directory, url_for, redirect
-from flask_login import current_user, login_required, LoginManager, login_user
+from flask_login import current_user, login_required, LoginManager, login_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
 from wtforms import StringField, PasswordField, SubmitField, validators
 
 import argparse
+import json
 import os
 import re
 import uuid
@@ -23,7 +24,7 @@ app.config['SECRET_KEY'] = os.urandom(32)
 csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
-login_manager.login_view = 'login.html'
+login_manager.login_view = 'login'
 login_manager.init_app(app)
 
 data_graph = DataGraph()
@@ -77,7 +78,7 @@ def login():
             
     return render_template('login.html', form=form, error=error)
 
-@app.route('/logout')
+@app.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
     logout_user()
@@ -105,9 +106,11 @@ def register():
     return render_template('register_user.html', form=form, error=error)
 
 @app.route('/graph_data', methods=['GET'])
-@login_required
 def get_graph_data():
-    return data_graph.current_graph_json()
+    if current_user.is_authenticated:
+        return json.dumps(data_graph.current_graph_json())
+    else:
+        return redirect(url_for('login'))
 
 @app.route('/upsert_node', methods=['POST'])
 @login_required

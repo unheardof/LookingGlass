@@ -3,7 +3,6 @@ from sqlalchemy.orm import sessionmaker
 import boto3
 import os.path
 import sys
-import json
 import datetime
 
 from .tables import ChangeLog, Node, AdditionalNodeData, Edge, User, setup_tables
@@ -57,12 +56,10 @@ class DataGraph:
             else:
                 nodes_by_id[edge.source_node_id]['connections'] = [edge.destination_node_id]
 
-        graph = {
+        return {
             'current_version_number': current_version_number,
             'nodes': nodes_by_id.values()
         }
-
-        return json.dumps(graph)
 
     def get_node_by_ip(self, node_ip):
         session = self.create_session()
