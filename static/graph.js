@@ -186,6 +186,14 @@ function getCsrfToken() {
     return document.head.querySelector("meta[name='csrf-token']").getAttribute("content");
 }
 
+function getUserId() {
+    return document.head.querySelector("meta[name='user-id']").getAttribute("content");
+}
+
+function getWorkspaceId() {
+    return document.head.querySelector("meta[name='workspace-id']").getAttribute("content");
+}
+
 function postData(methodName, data) {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", methodName, true);
@@ -200,7 +208,12 @@ function postData(methodName, data) {
 	}
     };
 
-    xhttp.send(JSON.stringify(data, undefined, 2));
+    request = {}
+    request['user_id'] = getUserId();
+    request['workspace_id'] = getWorkspaceId();
+    request['data'] = data;
+
+    xhttp.send(JSON.stringify(request, undefined, 2));
 }
 
 function postGraphData(methodName, data) {
@@ -246,7 +259,11 @@ function delete_view_specific_data_attrs(data) {
 
 function saveNode(data, callback) {
     clearPopUp();
-    data = delete_view_specific_data_attrs(data);
+    data = {};
+    data['node_data'] = delete_view_specific_data_attrs(data);
+    data['user_id'] = getUserId();
+    data['workspace_id'] = getWorkspaceId();
+    
     postGraphData("upsert_node", data);
     callback(data);
 }
@@ -359,7 +376,8 @@ function refreshGraph() {
     
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200 && keepGraphUpToDate) {
+	// TODO: Add error handling
+	if (this.readyState == 4 && keepGraphUpToDate) {
             var graphData = JSON.parse(xmlHttp.responseText);
 
 	    if (parseInt(graphData['current_version_number']) > currGraphVersion) {
@@ -382,7 +400,8 @@ function refreshGraph() {
 	}
     };
 
-    xmlHttp.open( "GET", "graph_data", true ); // true for asynchronous request
+    params = "user_id=" + getUserId() + "&workspace_id=" + getWorkspaceId();
+    xmlHttp.open( "GET", "graph_data?" + params, true ); // true for asynchronous request
     xmlHttp.send();
 }
 

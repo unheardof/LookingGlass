@@ -1,6 +1,6 @@
 # TODO: Send all traffic over HTTPS
 
-from flask import Flask, request, render_template, send_from_directory, url_for, redirect
+from flask import Flask, request, render_template, send_from_directory, url_for, redirect, session, Response
 from flask_login import current_user, login_required, LoginManager, login_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
@@ -51,11 +51,15 @@ class RegistrationForm(FlaskForm):
     
 @login_manager.user_loader
 def load_user(user_id):
-    return data_graph.create_session().query(User).filter_by(id = user_id).first()
+    return data_graph.load_user(user_id)
     
 @app.route('/', methods=['GET'])
 def index():
     if current_user.is_authenticated:
+        if session.get('workspace_id') is None:
+            session['workspace_id'] = data_graph.default_workspace_for_user(user_id).id
+
+        print('Getting infrastructure_graph')
         return render_template('infrastructure_graph.html')
     else:
         return render_template('login.html', form=LoginForm())
@@ -71,6 +75,15 @@ def login():
 
         if not user is None:
             login_user(user, remember=True)
+
+            # TODO: Allow switching between workspaces
+            available_workspaces = data_graph.workspaces_for_user(current_user.id)
+            if available_workspaces is None or len(available_workspaces) == 0:
+                new_workspace = data_graph.create_workspace(current_user.id, 'DEFAULT', True)
+                session['workspace_id'] = new_workspace.id
+            else:
+                session['workspace_id'] = available_workspaces[0].id
+
             print('Logged in successfully')
             return redirect(url_for('index'))
         else:
@@ -82,6 +95,7 @@ def login():
 @login_required
 def logout():
     logout_user()
+    session['workspace_id'] = None
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -105,50 +119,69 @@ def register():
     
     return render_template('register_user.html', form=form, error=error)
 
+@app.route('/create_workspace', methods=['POST'])
+@login_required
+def create_workspace():
+    success = data_graph.create_workspace(request.json['user_id'], request.json['workspace_id'], request.json['workspace_name'])
+
+    if not success:
+        response = Response('Unable to create workspace %s' % workspace_name)
+        response.status_code = 409 # Conflict error code
+        return response
+    else:
+        response = Response()
+        response.status_code = 200
+        return response
+
 @app.route('/graph_data', methods=['GET'])
 def get_graph_data():
     if current_user.is_authenticated:
-        return json.dumps(data_graph.current_graph_json())
+        graph_json = data_graph.current_graph_json(request.args.get('user_id'), request.args.get('workspace_id'))
+
+        if graph_json is None:
+            return Response('User not allowed to access the requested workspace', status=403)
+        else:
+            #return Response(json.dumps(graph_json), status=200)
+            return json.dumps(graph_json)
     else:
         return redirect(url_for('login'))
 
 @app.route('/upsert_node', methods=['POST'])
 @login_required
 def upsert_node():
-    print("Received call to upsert_node API with: %s" % request.json)
-    data_graph.upsert_node(request.json)
+    data_graph.upsert_node(request.json['data'], request.json['user_id'], request.json['workspace_id'])
     return 'ok'
 
 @app.route('/add_edge', methods=['POST'])
 @login_required
 def add_edge():
-    print("Received call to add_edge API with: %s" % request.json)
-    data_graph.add_edge(request.json)
+    data_graph.add_edge(request.json['data'], request.json['user_id'], request.json['workspace_id'])
     return 'ok'
 
 @app.route('/remove_node', methods=['POST'])
 @login_required
 def remove_node():
-    print("Received call to remove_node API with: %s" % request.json)
-    data_graph.remove_node(request.json)
+    data_graph.remove_node(request.json['data'], request.json['user_id'], request.json['workspace_id'])
     return 'ok'
 
 @app.route('/remove_edge', methods=['POST'])
 @login_required
 def remove_edge():
-    print("Received call to remove_edge API with: %s" % request.json)
-    data_graph.remove_edge(request.json['from'], request.json['to'])
+    edge_data = request.json['data']
+    data_graph.remove_edge(edge_data['from'], edge_data['to'], request.json['user_id'], request.json['workspace_id'])
     return 'ok'
 
 @app.route('/upload_nmap_data', methods=['POST'])
 @login_required
 def upload_nmap_data():
-    print("upload_nmap_data: received %s" % request.json)
-
-    data = ScanData.create_from_nmap_data(request.json.encode('utf-8'))
+    nmap_data = request.json['data']
+    user_id = request.json['user_id']
+    session['workspace_id'] = request.json['workspace_id']
+    
+    data = ScanData.create_from_nmap_data(nmap_data.encode('utf-8'))
     
     for host in data.host_data_list():
-        node = data_graph.get_node_by_ip(host.ip)
+        node = data_graph.get_node_by_ip(host.ip, user_id, session['workspace_id'])
 
         node_updated = False
         
@@ -177,7 +210,7 @@ def upload_nmap_data():
                 print("Node with IP of %s already has the same %s data; no action necessary" % (host.ip, key))
 
         if node_updated:
-            data_graph.upsert_node(node)
+            data_graph.upsert_node(node, user_id, session['workspace_id'])
         
     return 'ok'
 

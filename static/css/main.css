@@ -1,6 +1,6 @@
 /* From https://isabelcastillo.com/error-info-messages-css */
 .isa_info, .isa_success, .isa_warning, .isa_error {
-    padding: 12px;
+    padding: 6px;
     font-size: 20px;
     height: fit-contents;
 }

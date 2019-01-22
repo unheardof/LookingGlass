@@ -30,6 +30,20 @@ class User(UserMixin, Base):
     def get_id(self):
         return self.id
 
+class Workspace(Base):
+    __tablename__ = 'workspaces'
+
+    id = Column(Integer, primary_key = True)
+    owning_user = Column(Integer, ForeignKey("users.id"), nullable = False, index = True)
+    name = Column(String, nullable = False, index = True)
+    default = Column(Boolean, nullable = False, index = True)
+
+class AuthorizedWorkspaceUser(Base):
+    __tablename__ = 'authorized_workspace_users'
+
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
+    authorized_user_id = Column(Integer, ForeignKey("users.id"), primary_key = True)
+
 class ChangeLog(Base):
     __tablename__ = 'change_log'
 
@@ -60,6 +74,7 @@ class Node(Base):
     # this will allow for undo-redo functionality as well as point-in-time playbacks / lookbacks using the change_log table
     # to get the date-time when the change was made
     id = Column(String, primary_key = True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
     version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
     hostname = Column(String)
     ip = Column(String)
@@ -75,9 +90,10 @@ class Node(Base):
         return d
 
     @staticmethod
-    def from_dict(node):
+    def from_dict(node, workspace_id):
         return Node(
             id = node.get('id'),
+            workspace_id = workspace_id,
             version_number = node.get('version_number'),
             hostname = node.get('hostname'),
             ip = node.get('ip'),
@@ -93,6 +109,7 @@ class Edge(Base):
     source_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
     destination_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
     version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
     active = Column(Boolean)
 
 def setup_tables(engine):
