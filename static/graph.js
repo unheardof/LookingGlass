@@ -202,11 +202,19 @@ function postData(methodName, data) {
     xhttp.setRequestHeader("X-CSRFToken", getCsrfToken());
 
     xhttp.onreadystatechange = function() {
-     	if (this.readyState == 4 && this.status == 200) {
-	    refreshGraph();
-	    location.reload(); // Refresh the page
-	} else if (this.status != 200) {
-	    console.error(xhttp.responseText);
+	// Wait for the state changes to end before doing anythingx
+     	if (this.readyState == 4) {
+	    if (this.status == 200) {
+		refreshGraph();
+	    } else {
+		if (xhttp.responseText) {
+		    alert(xhttp.responseText);
+		    console.error(xhttp.responseText);
+		} else {
+		    alert('Failed to execute ' + methodName);
+		    console.error('Failed to execute ' + methodName);
+		}
+	    }
 	}
     };
 
@@ -261,11 +269,7 @@ function delete_view_specific_data_attrs(data) {
 
 function saveNode(data, callback) {
     clearPopUp();
-    data = {};
-    data['node_data'] = delete_view_specific_data_attrs(data);
-    data['user_id'] = getUserId();
-    data['workspace_id'] = getWorkspaceId();
-    
+    delete_view_specific_data_attrs(data);
     postGraphData("upsert_node", data);
     callback(data);
 }
@@ -475,7 +479,6 @@ function init() {
 }
 
 function logout() {
-    // TODO: Verify that this only signs out the current user for the session
     // No additional data needs to be send with the logout request
     keepGraphUpToDate = false;
     postData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
@@ -493,4 +496,12 @@ function createWorkspace() {
     data = {};
     data['workspace_name'] = workspace_name;
     postData('create_workspace', data);
+}
+
+function shareWorkspace() {
+    var username = prompt('Who would you like to share this workspace with?');
+
+    data = {};
+    data['authorized_user'] = username;
+    postData('share_workspace', data);
 }

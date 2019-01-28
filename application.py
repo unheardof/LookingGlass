@@ -123,7 +123,8 @@ def register():
 @app.route('/create_workspace', methods=['POST'])
 @login_required
 def create_workspace():
-    success = data_graph.create_workspace(request.json['user_id'], request.json['data']['workspace_name'])
+    workspace_name = request.json['data']['workspace_name']
+    success = data_graph.create_workspace(request.json['user_id'], workspace_name)
 
     if not success:
         response = Response('Unable to create workspace %s' % workspace_name)
@@ -134,17 +135,36 @@ def create_workspace():
         response.status_code = 200
         return response
 
+@app.route('/share_workspace', methods=['POST'])
+@login_required
+def share_workspace():
+    workspace_id = request.json['workspace_id']
+    success = data_graph.grant_workspace_access(request.json['user_id'], workspace_id, request.json['data']['authorized_user'])
+
+    if not success:
+        response = Response('Unable to share workspace (ID: %s)' % workspace_id)
+        response.status_code = 403 # Forbidden
+        return response
+    else:
+        response = Response()
+        response.status_code = 200
+        return response
+
 @app.route('/graph_data', methods=['GET'])
 def get_graph_data():
-    if current_user.is_authenticated:
-        graph_json = data_graph.current_graph_json(request.args.get('user_id'), request.args.get('workspace_id'))
-
-        if graph_json is None:
-            return Response('User not allowed to access the requested workspace', status=403)
+    try:
+        if current_user.is_authenticated:
+            graph_json = data_graph.current_graph_json(request.args.get('user_id'), request.args.get('workspace_id'))
+            
+            if graph_json is None:
+                return Response('User not allowed to access the requested workspace', status=403)
+            else:
+                return json.dumps(graph_json)
         else:
-            return json.dumps(graph_json)
-    else:
-        return redirect(url_for('login'))
+            return redirect(url_for('login'))
+    except Exception as err:
+        print("[ERROR] %s" % err)
+        return Response(str(err), status=400)
 
 @app.route('/upsert_node', methods=['POST'])
 @login_required

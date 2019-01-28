@@ -56,6 +56,27 @@ class DataGraph:
         session.commit()
 
         return new_workspace
+
+    def grant_workspace_access(self, owning_user_id, workspace_id, authorized_user_id):
+        session = self.create_session()
+
+        # Can only share with users who exist
+        if session.query(User).filter_by(id = authorized_user_id).first() is None:
+            return False
+
+        if session.query(Workspace).filter_by(owning_user = owning_user_id, id = workspace_id).first() is None:
+            return False
+
+        session.add(
+            AuthorizedWorkspaceUser(
+                workspace_id = workspace_id,
+                authorized_user = authorized_user_id
+            )
+        )
+
+        session.commit()
+
+        return True
     
     def can_user_access_workspace(self, session, username, workspace_id):
         access_allowed = False
@@ -72,7 +93,13 @@ class DataGraph:
 
     def workspaces_for_user(self, username):
         session = self.create_session()
-        return session.query(Workspace).filter_by(owning_user = username).all()
+        owned_workspaces = session.query(Workspace).filter_by(owning_user = username).all()
+
+        authorizations = session.query(AuthorizedWorkspaceUser).filter_by(authorized_user = username).all()
+        authorized_workspace_ids = [ a.workspace_id for a in authorizations ]
+        authorized_workspaces = session.query(Workspace).filter(Workspace.id.in_(authorized_workspace_ids)).all()
+
+        return owned_workspaces + authorized_workspaces
 
     def default_workspace_for_user(self, username):
         session = self.create_session()
