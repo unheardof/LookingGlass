@@ -48,8 +48,14 @@
       <input type="button" value="cancel" id="cancelButton" />
     </div>
 
-    <div style="height: 100%; width: 100%">
+    <div id="master-div">
       <div id="mynetwork" onclick="closeControlPanel()"></div>
+
+      <div id="workspace-tabs">
+	{% for workspace in session['workspaces'] %}
+	  <button class="tab-buttons" onclick="loadWorkspace({{ workspace['id'] }})" >{{ workspace['name'] }}</button>
+	{% endfor %}
+      </div>
 
       <span id="openControlPanelSpan" onclick="openControlPanel()">&#9776;</span>
 
@@ -60,7 +66,9 @@
 	<input type="file" id="fileSelector" style="display:none" onchange="uploadNmapFiles(this.files)" />
 
 	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
-	<h1>Hi {{ current_user.display_name }}</h1><hr><br>
+	<h1>Hi {{ current_user.get_username() }}</h1><hr><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="createWorkspace" onclick="createWorkspace()">Create New Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="shareWorkspace" onclick="shareWorkspace()">Share Workspace</a><br><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a><br><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="logoutControl" onclick="logout()">Logout</a>
       </div>

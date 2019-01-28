@@ -5,6 +5,7 @@ var seed = 2; // Want the nodes to be rendered the same way every time (rather t
 var data = {};
 var currGraphVersion = 0;
 var keepGraphUpToDate = true;
+var redraw = false;
 
 var options = {
     locale: 'en',
@@ -203,6 +204,7 @@ function postData(methodName, data) {
     xhttp.onreadystatechange = function() {
      	if (this.readyState == 4 && this.status == 200) {
 	    refreshGraph();
+	    location.reload(); // Refresh the page
 	} else if (this.status != 200) {
 	    console.error(xhttp.responseText);
 	}
@@ -380,7 +382,9 @@ function refreshGraph() {
 	if (this.readyState == 4 && keepGraphUpToDate) {
             var graphData = JSON.parse(xmlHttp.responseText);
 
-	    if (parseInt(graphData['current_version_number']) > currGraphVersion) {
+	    if (redraw || parseInt(graphData['current_version_number']) > currGraphVersion) {
+		redraw = false;
+		
 		// Hide the node data pop-up
 		var popupDiv = document.getElementById('node-popup');
 		popupDiv.style.display = 'none';
@@ -476,4 +480,17 @@ function logout() {
     keepGraphUpToDate = false;
     postData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
     window.location.href = '/login';
+}
+
+function loadWorkspace(workspaceId) {
+    document.querySelector('meta[name="workspace-id"]').setAttribute("content", workspaceId);
+    redraw = true;
+}
+
+function createWorkspace() {
+    var workspace_name = prompt('Enter name for the new workspace:');
+
+    data = {};
+    data['workspace_name'] = workspace_name;
+    postData('create_workspace', data);
 }

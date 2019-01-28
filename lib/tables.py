@@ -14,15 +14,12 @@ Base = declarative_base()
 class User(UserMixin, Base):
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key = True)
-    username = Column(String(30), nullable=False)
-    display_name = Column(String(300), nullable=False)
+    id = Column(String(30), primary_key = True)
     password = Column(String(300), nullable=False)
 
-    def __init__(self, username, password, display_name = None):
-        self.username = username
+    def __init__(self, username, password):
+        self.id = username
         self.password = bcrypt.hashpw(password, bcrypt.gensalt())
-        self.display_name = display_name
 
     def validate_password(self, password):
         return bcrypt.checkpw(password, self.password)
@@ -30,19 +27,22 @@ class User(UserMixin, Base):
     def get_id(self):
         return self.id
 
+    def get_username(self):
+        return self.id
+
 class Workspace(Base):
     __tablename__ = 'workspaces'
 
     id = Column(Integer, primary_key = True)
-    owning_user = Column(Integer, ForeignKey("users.id"), nullable = False, index = True)
+    owning_user = Column(String, ForeignKey("users.id"), nullable = False, index = True)
     name = Column(String, nullable = False, index = True)
-    default = Column(Boolean, nullable = False, index = True)
+    default = Column(Boolean, nullable = True, index = True)
 
 class AuthorizedWorkspaceUser(Base):
     __tablename__ = 'authorized_workspace_users'
 
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
-    authorized_user_id = Column(Integer, ForeignKey("users.id"), primary_key = True)
+    authorized_user = Column(Integer, ForeignKey("users.id"), primary_key = True)
 
 class ChangeLog(Base):
     __tablename__ = 'change_log'

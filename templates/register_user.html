@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>LookingGlass Register</title>
+    <title>Register New User</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
   </head>
@@ -17,8 +17,6 @@
       <form action="/register" method="post">
 	<label for="username">Username:</label>
 	<input type="text" name="username" value="{{request.form.username}}">
-	<label for="displayname">Display Name:</label>
-	<input type="text" name="displayname" value="{{request.form.displayname}}">
 	<label for="password">Password:</label>
 	<input type="password" name="password" value="{{request.form.password}}">
 	<label for="confirm">Confirm Password:</label>

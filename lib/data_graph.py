@@ -5,7 +5,7 @@ import os.path
 import sys
 import datetime
 
-from .tables import ChangeLog, Node, AdditionalNodeData, Edge, User, Workspace, setup_tables
+from .tables import ChangeLog, Node, AdditionalNodeData, Edge, User, Workspace, AuthorizedWorkspaceUser, setup_tables
 
 class DataGraph:
 
@@ -23,14 +23,11 @@ class DataGraph:
 
     def load_user(self, user_id):
         return self.create_session().query(User).filter_by(id = user_id).first()
-    
-    def find_user_by_username(self, user_name):
-        return self.create_session().query(User).filter_by(username = user_name).first()
 
-    def create_user(self, username, password, display_name):
+    def create_user(self, username, password):
         session = self.create_session()
         
-        new_user = User(username, password, display_name)
+        new_user = User(username, password)
         session.add(new_user)
         session.commit()
     
@@ -60,11 +57,11 @@ class DataGraph:
 
         return new_workspace
     
-    def can_user_access_workspace(self, session, user_id, workspace_id):
+    def can_user_access_workspace(self, session, username, workspace_id):
         access_allowed = False
-        owned_workspace = session.query(Workspace).filter_by(owning_user = user_id, id = workspace_id).first()
+        owned_workspace = session.query(Workspace).filter_by(owning_user = username, id = workspace_id).first()
         if owned_workspace is None:
-            authorized_workspace = session.query(AuthorizedWorkspaceUser).filter_by(workspace_id = workspace_id, authorized_user_id = user_id).first()
+            authorized_workspace = session.query(AuthorizedWorkspaceUser).filter_by(workspace_id = workspace_id, authorized_user = username).first()
 
             if authorized_workspace is not None:
                 access_allowed = True
@@ -73,20 +70,20 @@ class DataGraph:
 
         return access_allowed
 
-    def workspaces_for_user(self, user_id):
+    def workspaces_for_user(self, username):
         session = self.create_session()
-        return session.query(Workspace).filter_by(owning_user = user_id).all()
+        return session.query(Workspace).filter_by(owning_user = username).all()
 
-    def default_workspace_for_user(self, user_id):
+    def default_workspace_for_user(self, username):
         session = self.create_session()
-        return session.query(Workspace).filter_by(owning_user = user_id, default = True).first()
+        return session.query(Workspace).filter_by(owning_user = username, default = True).first()
     
-    def current_graph_json(self, user_id, workspace_id):
+    def current_graph_json(self, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         nodes = session.query(Node).filter_by(active = True, workspace_id = workspace_id).all()
         current_version_number = ChangeLog.curr_version_number(session)
 
@@ -106,10 +103,10 @@ class DataGraph:
             'nodes': nodes_by_id.values()
         }
 
-    def get_node_by_ip(self, node_ip, user_id, workspace_id):
+    def get_node_by_ip(self, node_ip, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
         node = session.query(Node).filter_by(active = True, ip = node_ip, workspace_id = workspace_id).first()
@@ -119,10 +116,10 @@ class DataGraph:
 
         return node
     
-    def upsert_node(self, node_dict, user_id, workspace_id):
+    def upsert_node(self, node_dict, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
         # Lock the existing node record
@@ -165,10 +162,10 @@ class DataGraph:
 
         session.commit()
 
-    def add_edge(self, edge, user_id, workspace_id):
+    def add_edge(self, edge, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
         current_version_number = ChangeLog.curr_version_number(session)
@@ -199,10 +196,10 @@ class DataGraph:
         session.add(new_changelog_row)
         session.commit()
 
-    def remove_node(self, node_id, user_id, workspace_id):
+    def remove_node(self, node_id, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
         edges_from_node = session.query(Edge).filter_by(active = True, source_node_id = node_id, workspace_id = workspace_id).all()
@@ -218,10 +215,10 @@ class DataGraph:
         
         session.commit()
 
-    def remove_edge(self, from_node_id, to_node_id, user_id, workspace_id):
+    def remove_edge(self, from_node_id, to_node_id, username, workspace_id):
         session = self.create_session()
 
-        if not self.can_user_access_workspace(session, user_id, workspace_id):
+        if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
         edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, workspace_id = workspace_id).first()

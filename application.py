@@ -50,16 +50,17 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Submit')
     
 @login_manager.user_loader
-def load_user(user_id):
-    return data_graph.load_user(user_id)
+def load_user(username):
+    return data_graph.load_user(username)
     
 @app.route('/', methods=['GET'])
 def index():
     if current_user.is_authenticated:
         if session.get('workspace_id') is None:
-            session['workspace_id'] = data_graph.default_workspace_for_user(user_id).id
+            session['workspace_id'] = data_graph.default_workspace_for_user(current_user.get_username()).id
 
-        print('Getting infrastructure_graph')
+        session['workspaces'] = [ { 'name': w.name, 'id': w.id } for w in data_graph.workspaces_for_user(current_user.get_username()) ]
+        
         return render_template('infrastructure_graph.html')
     else:
         return render_template('login.html', form=LoginForm())
@@ -71,15 +72,15 @@ def login():
     error = None
     
     if form.validate_on_submit():
-        user = data_graph.find_user_by_username(form.username.data)
+        user = data_graph.load_user(form.username.data)
 
         if not user is None:
             login_user(user, remember=True)
 
             # TODO: Allow switching between workspaces
-            available_workspaces = data_graph.workspaces_for_user(current_user.id)
+            available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
             if available_workspaces is None or len(available_workspaces) == 0:
-                new_workspace = data_graph.create_workspace(current_user.id, 'DEFAULT', True)
+                new_workspace = data_graph.create_workspace(current_user.get_username(), 'DEFAULT', True)
                 session['workspace_id'] = new_workspace.id
             else:
                 session['workspace_id'] = available_workspaces[0].id
@@ -104,13 +105,13 @@ def register():
     error = None
 
     if request.method == 'POST' and form.validate():
-        user = data_graph.find_user_by_username(form.username.data)
+        user = data_graph.load_user(form.username.data)
 
         if user is None:
             if form.password.data != form.confirm.data:
                 error = 'Passwords do not match'
             else:
-                data_graph.create_user(form.username.data.encode('utf-8'), form.password.data.encode('utf-8'), form.displayname.data.encode('utf-8'))
+                data_graph.create_user(form.username.data.encode('utf-8'), form.password.data.encode('utf-8'))
                 
                 print('User %s has been registered' % form.username.data)
                 return redirect(url_for('login'))
@@ -122,7 +123,7 @@ def register():
 @app.route('/create_workspace', methods=['POST'])
 @login_required
 def create_workspace():
-    success = data_graph.create_workspace(request.json['user_id'], request.json['workspace_id'], request.json['workspace_name'])
+    success = data_graph.create_workspace(request.json['user_id'], request.json['data']['workspace_name'])
 
     if not success:
         response = Response('Unable to create workspace %s' % workspace_name)
@@ -141,7 +142,6 @@ def get_graph_data():
         if graph_json is None:
             return Response('User not allowed to access the requested workspace', status=403)
         else:
-            #return Response(json.dumps(graph_json), status=200)
             return json.dumps(graph_json)
     else:
         return redirect(url_for('login'))
@@ -175,13 +175,13 @@ def remove_edge():
 @login_required
 def upload_nmap_data():
     nmap_data = request.json['data']
-    user_id = request.json['user_id']
+    username = request.json['user_id']
     session['workspace_id'] = request.json['workspace_id']
     
     data = ScanData.create_from_nmap_data(nmap_data.encode('utf-8'))
     
     for host in data.host_data_list():
-        node = data_graph.get_node_by_ip(host.ip, user_id, session['workspace_id'])
+        node = data_graph.get_node_by_ip(host.ip, username, session['workspace_id'])
 
         node_updated = False
         
@@ -210,7 +210,7 @@ def upload_nmap_data():
                 print("Node with IP of %s already has the same %s data; no action necessary" % (host.ip, key))
 
         if node_updated:
-            data_graph.upsert_node(node, user_id, session['workspace_id'])
+            data_graph.upsert_node(node, username, session['workspace_id'])
         
     return 'ok'
 
