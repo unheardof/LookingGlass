@@ -48,6 +48,9 @@ class RegistrationForm(FlaskForm):
     confirm = PasswordField('Confirm', [validators.DataRequired()])
     displayname = StringField('DisplayName')
     submit = SubmitField('Submit')
+
+def defaultWorkspaceName():
+    return current_user.get_username() + "'s workspace"
     
 @login_manager.user_loader
 def load_user(username):
@@ -79,7 +82,7 @@ def login():
 
             available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
             if available_workspaces is None or len(available_workspaces) == 0:
-                new_workspace = data_graph.create_workspace(current_user.get_username(), 'DEFAULT', True)
+                new_workspace = data_graph.create_workspace(current_user.get_username(), defaultWorkspaceName(), True)
                 session['workspace_id'] = new_workspace.id
             else:
                 session['workspace_id'] = available_workspaces[0].id
