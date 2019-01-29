@@ -57,6 +57,19 @@ class DataGraph:
 
         return new_workspace
 
+    def delete_workspace(self, user_id, workspace_id):
+        session = self.create_session()
+
+        workspace = session.query(Workspace).filter_by(owning_user = user_id, id = workspace_id).first()
+
+        if workspace is None:
+            return False
+
+        session.delete(workspace)
+        session.commit()
+
+        return True
+    
     def grant_workspace_access(self, owning_user_id, workspace_id, authorized_user_id):
         session = self.create_session()
 
@@ -74,6 +87,19 @@ class DataGraph:
             )
         )
 
+        session.commit()
+
+        return True
+
+    def revoke_workspace_access(self, owning_user_id, workspace_id, unauthorized_user_id):
+        session = self.create_session()
+
+        user_authorization = session.query(AuthorizedWorkspaceUser).filter_by(workspace_id = workspace_id, authorized_user = unauthorized_user_id).first()
+
+        if user_authorization is None:
+            return False
+        
+        session.delete(user_authorization)
         session.commit()
 
         return True

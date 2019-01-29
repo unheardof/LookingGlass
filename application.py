@@ -77,7 +77,6 @@ def login():
         if not user is None:
             login_user(user, remember=True)
 
-            # TODO: Allow switching between workspaces
             available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
             if available_workspaces is None or len(available_workspaces) == 0:
                 new_workspace = data_graph.create_workspace(current_user.get_username(), 'DEFAULT', True)
@@ -126,13 +125,28 @@ def create_workspace():
     workspace_name = request.json['data']['workspace_name']
     success = data_graph.create_workspace(request.json['user_id'], workspace_name)
 
-    if not success:
+    if success:
+        response = Response()
+        response.status_code = 200
+        return response
+    else:
         response = Response('Unable to create workspace %s' % workspace_name)
         response.status_code = 409 # Conflict error code
         return response
-    else:
+
+@app.route('/delete_workspace', methods=['POST'])
+@login_required
+def delete_workspace():
+    workspace_id = request.json['data']['workspace_id']
+    success = data_graph.delete_workspace(request.json['user_id'], workspace_id)
+
+    if success:
         response = Response()
         response.status_code = 200
+        return response
+    else:
+        response = Response('Unable to delete workspace (ID: %s)' % workspace_id)
+        response.status_code = 400
         return response
 
 @app.route('/share_workspace', methods=['POST'])
@@ -141,15 +155,36 @@ def share_workspace():
     workspace_id = request.json['workspace_id']
     success = data_graph.grant_workspace_access(request.json['user_id'], workspace_id, request.json['data']['authorized_user'])
 
-    if not success:
-        response = Response('Unable to share workspace (ID: %s)' % workspace_id)
-        response.status_code = 403 # Forbidden
-        return response
-    else:
+    if success:
         response = Response()
         response.status_code = 200
         return response
+    else:
+        response = Response('Unable to share workspace (ID: %s)' % workspace_id)
+        response.status_code = 403 # Forbidden
+        return response
 
+@app.route('/unshare_workspace', methods=['POST'])
+@login_required
+def unshare_workspace():
+    workspace_id = request.json['workspace_id']
+    success = data_graph.revoke_workspace_access(request.json['user_id'], workspace_id, request.json['data']['unauthorized_user'])
+
+    if success:
+        response = Response()
+        response.status_code = 200
+        return response
+    else:
+        response = Response('Unable to revoke permissions for the %s user for workspace with ID: %s' % (request.json['data']['unauthorized_user'], workspace_id))
+        response.status_code = 403 # Forbidden
+        return response
+
+@app.route('/workspaces', methods=['GET'])
+@login_required
+def get_workspaces_for_user():
+    session['workspaces'] = [ { 'name': w.name, 'id': w.id } for w in data_graph.workspaces_for_user(current_user.get_username()) ]
+    return Response(json.dumps(session['workspaces']))
+    
 @app.route('/graph_data', methods=['GET'])
 def get_graph_data():
     try:

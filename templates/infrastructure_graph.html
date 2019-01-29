@@ -54,7 +54,11 @@
       <!-- TODO: Add support for auto-updating the view when a workspace gets shared -->
       <div id="workspace-tabs">
 	{% for workspace in session['workspaces'] %}
+	<!-- Enclosing in span to make it easier to dynamically add new buttons -->
+	<span>
 	  <button class="tab-buttons" onclick="loadWorkspace({{ workspace['id'] }})" >{{ workspace['name'] }}</button>
+	  <input type="hidden" value="{{ workspace['id'] }}" />
+	</span>
 	{% endfor %}
       </div>
 
@@ -70,7 +74,9 @@
 	<h1>Hi {{ current_user.get_username() }}</h1>
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="createWorkspace" onclick="createWorkspace()">Create New Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="removeWorkspace" onclick="removeWorkspace()">Remove Workspace</a><br><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="shareWorkspace" onclick="shareWorkspace()">Share Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="unshareWorkspace" onclick="unshareWorkspace()">Unshare Workspace</a><br><br>
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a><br><br>
 	<hr><br>

@@ -5,7 +5,6 @@ var seed = 2; // Want the nodes to be rendered the same way every time (rather t
 var data = {};
 var currGraphVersion = 0;
 var keepGraphUpToDate = true;
-var redraw = false;
 
 var options = {
     locale: 'en',
@@ -195,7 +194,7 @@ function getWorkspaceId() {
     return document.head.querySelector("meta[name='workspace-id']").getAttribute("content");
 }
 
-function postData(methodName, data) {
+function postData(methodName, data = {}) {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", methodName, true);
     xhttp.setRequestHeader("Content-type", "application/json");
@@ -375,7 +374,7 @@ function create_network(container, data, options) {
     return network;
 }
 
-function refreshGraph() {
+function refreshGraph(forceRedraw = false) {
     if (!keepGraphUpToDate) {
 	return null;
     }
@@ -386,9 +385,7 @@ function refreshGraph() {
 	if (this.readyState == 4 && keepGraphUpToDate) {
             var graphData = JSON.parse(xmlHttp.responseText);
 
-	    if (redraw || parseInt(graphData['current_version_number']) > currGraphVersion) {
-		redraw = false;
-		
+	    if (forceRedraw || parseInt(graphData['current_version_number']) > currGraphVersion) {
 		// Hide the node data pop-up
 		var popupDiv = document.getElementById('node-popup');
 		popupDiv.style.display = 'none';
@@ -403,13 +400,14 @@ function refreshGraph() {
 		var container = document.getElementById('mynetwork');
 		network = create_network(container, data, options);
 	    }
-	
+
 	    setTimeout(refreshGraph, 100);
+	    refreshWorkspaceTabs();
 	}
     };
 
     params = "user_id=" + getUserId() + "&workspace_id=" + getWorkspaceId();
-    xmlHttp.open( "GET", "graph_data?" + params, true ); // true for asynchronous request
+    xmlHttp.open("GET", "graph_data?" + params, true ); // true for asynchronous request
     xmlHttp.send();
 }
 
@@ -485,17 +483,112 @@ function logout() {
     window.location.href = '/login';
 }
 
+function getWorkspaceNameForTab(tabSpan) {
+    return tabSpan.children[0].textContent;
+}
+
+function getWorkspaceIdForTab(tabSpan) {
+    // The workspace ID is stored in a hidden input element within the tab span
+    return tabSpan.children[1].value;
+}
+
+function tabExists(workspaceName, currentTabs) {
+    for (var i = 0; i < currentTabs.length; i++) {
+	if (getWorkspaceNameForTab(currentTabs[i]) == workspaceName) {
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+function workspaceExists(workspaceName, workspaces) {
+    for (var i = 0; i < workspaces.length; i++) {
+	if (workspaces[i]['name'] == workspaceName) {
+	    return true;
+	}
+    }
+
+    return false;
+}
+
+function refreshWorkspaceTabs() {
+    var xmlHttp = new XMLHttpRequest();
+
+    xmlHttp.onreadystatechange = function() {
+	if (this.readyState == 4) {
+	    // TODO: Add error handling
+            var workspaces = JSON.parse(xmlHttp.responseText);
+
+	    var workspaceTabsDiv = document.getElementById('workspace-tabs');
+	    var currentTabs = workspaceTabsDiv.children;
+
+	    // Remove any tabs for workspaces which no longer exist (or the user no
+	    // longer has permissions for)
+	    for (var i = 0; i < currentTabs.length; i++) {
+		var tabWorkspaceName = getWorkspaceNameForTab(currentTabs[i]);
+		if (!workspaceExists(tabWorkspaceName, workspaces)) {
+		    var workspaceId = getWorkspaceIdForTab(currentTabs[i]);
+		    workspaceTabsDiv.removeChild(currentTabs[i]);
+
+		    // If the user is currently viewing the workspace that has been removed,
+		    // just refresh the page
+		    if (workspaceId == getWorkspaceId()) {
+			location.reload();
+		    }
+		}
+
+	    }
+
+	    for (var i = 0; i < workspaces.length; i++) {
+		if (tabExists(workspaces[i]['name'], currentTabs)) {
+		    continue;
+		} else {
+		    var tabButtonHtml = "<button class='tab-buttons' onclick='loadWorkspace(";
+		    tabButtonHtml += workspaces[i]['id'];
+		    tabButtonHtml += ")' >"
+		    tabButtonHtml += workspaces[i]['name'];
+		    tabButtonHtml += "</button>";
+		    tabButtonHtml += "<input type='hidden' value='";
+		    tabButtonHtml += workspaces[i]['id'];
+		    tabButtonHtml += "'/>";
+
+		    // Based on answer from https://stackoverflow.com/questions/6956258/adding-onclick-event-to-dynamically-added-button
+		    var span = document.createElement("span");
+		    span.innerHTML = tabButtonHtml;
+		    workspaceTabsDiv.appendChild(span);
+		}
+	    }
+	}
+    };
+    
+    xmlHttp.open("GET", "workspaces", true ); // true for asynchronous request
+    xmlHttp.send();
+}
+
 function loadWorkspace(workspaceId) {
     document.querySelector('meta[name="workspace-id"]').setAttribute("content", workspaceId);
-    redraw = true;
+    refreshGraph(true);
 }
 
 function createWorkspace() {
     var workspace_name = prompt('Enter name for the new workspace:');
 
-    data = {};
-    data['workspace_name'] = workspace_name;
-    postData('create_workspace', data);
+    if (workspace_name) {
+	data = {};
+	data['workspace_name'] = workspace_name;
+	postData('create_workspace', data);
+	refreshWorkspaceTabs();
+    }
+}
+
+function removeWorkspace() {
+    var proceed = confirm('Really delete current workspace?')
+
+    if (proceed) {
+	postData('delete_workspace', { 'workspace_id': getWorkspaceId() });
+	location.reload();
+    }
 }
 
 function shareWorkspace() {
@@ -504,4 +597,14 @@ function shareWorkspace() {
     data = {};
     data['authorized_user'] = username;
     postData('share_workspace', data);
+}
+
+function unshareWorkspace() {
+    // TODO: Allow user to select from list of currently authorized users
+    //       Would ultimately be good to add a permissions/workspaces management page
+    var username = prompt('Who would you like to unshare this workspace with?');
+
+    data = {};
+    data['unauthorized_user'] = username;
+    postData('unshare_workspace', data);
 }
