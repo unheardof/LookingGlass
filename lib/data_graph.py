@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 import boto3
 import os.path
@@ -43,13 +43,14 @@ class DataGraph:
     def create_workspace(self, user_id, workspace_name, default = False):
         session = self.create_session()
 
-        if session.query(Workspace).filter_by(owning_user = user_id, name = workspace_name).first() is not None:
+        if session.query(Workspace).filter_by(active = True, owning_user = user_id, name = workspace_name).first() is not None:
             return None
 
         new_workspace = Workspace(
             owning_user = user_id,
             name = workspace_name,
-            default = default
+            default = default,
+            active = True
         )
 
         session.add(new_workspace)
@@ -60,12 +61,13 @@ class DataGraph:
     def delete_workspace(self, user_id, workspace_id):
         session = self.create_session()
 
-        workspace = session.query(Workspace).filter_by(owning_user = user_id, id = workspace_id).first()
+        workspace = session.query(Workspace).filter_by(active = True, owning_user = user_id, id = workspace_id).first()
 
         if workspace is None:
             return False
 
-        session.delete(workspace)
+        workspace.active = False
+        session.add(workspace)
         session.commit()
 
         return True
@@ -77,7 +79,7 @@ class DataGraph:
         if session.query(User).filter_by(id = authorized_user_id).first() is None:
             return False
 
-        if session.query(Workspace).filter_by(owning_user = owning_user_id, id = workspace_id).first() is None:
+        if session.query(Workspace).filter_by(active = True, owning_user = owning_user_id, id = workspace_id).first() is None:
             return False
 
         session.add(
@@ -106,7 +108,7 @@ class DataGraph:
     
     def can_user_access_workspace(self, session, username, workspace_id):
         access_allowed = False
-        owned_workspace = session.query(Workspace).filter_by(owning_user = username, id = workspace_id).first()
+        owned_workspace = session.query(Workspace).filter_by(active = True, owning_user = username, id = workspace_id).first()
         if owned_workspace is None:
             authorized_workspace = session.query(AuthorizedWorkspaceUser).filter_by(workspace_id = workspace_id, authorized_user = username).first()
 
@@ -119,11 +121,11 @@ class DataGraph:
 
     def workspaces_for_user(self, username):
         session = self.create_session()
-        owned_workspaces = session.query(Workspace).filter_by(owning_user = username).all()
+        owned_workspaces = session.query(Workspace).filter_by(active = True, owning_user = username).all()
 
         authorizations = session.query(AuthorizedWorkspaceUser).filter_by(authorized_user = username).all()
         authorized_workspace_ids = [ a.workspace_id for a in authorizations ]
-        authorized_workspaces = session.query(Workspace).filter(Workspace.id.in_(authorized_workspace_ids)).all()
+        authorized_workspaces = session.query(Workspace).filter(and_(Workspace.id.in_(authorized_workspace_ids), Workspace.active == True)).all()
 
         return owned_workspaces + authorized_workspaces
 

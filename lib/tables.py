@@ -37,6 +37,7 @@ class Workspace(Base):
     owning_user = Column(String, ForeignKey("users.id"), nullable = False, index = True)
     name = Column(String, nullable = False, index = True)
     default = Column(Boolean, nullable = True, index = True)
+    active = Column(Boolean)
 
 class AuthorizedWorkspaceUser(Base):
     __tablename__ = 'authorized_workspace_users'
