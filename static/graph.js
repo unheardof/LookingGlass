@@ -232,18 +232,30 @@ function postGraphData(methodName, data) {
     postData(methodName, data);
 }
 
-function openNmapFileSelector() {
-    fileSelector.click();
-}
-
-function uploadNmapFiles(files) {
+function postFile(methodName, fileName) {
     var reader = new FileReader();
 
     reader.onload = function(evt) {
-	postData('upload_nmap_data', evt.target.result);
+	postData(methodName, evt.target.result);
     };
 
-    reader.readAsText(files[0]);
+    reader.readAsText(fileName);
+}
+
+function openNmapFileSelector() {
+    nmapFileSelector.click();
+}
+
+function openArpFileSelector() {
+    arpFileSelector.click();
+}
+
+function uploadNmapFile(files) {
+    postFile('upload_nmap_data', files[0]);
+}
+
+function uploadArpFile(files) {
+    postFile('upload_arp_data', files[0]);
 }
 
 function delete_view_specific_data_attrs(data) {

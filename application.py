@@ -15,6 +15,7 @@ import uuid
 from NmapQueryTool.nmap_query import ScanData
 from lib.data_graph import DataGraph
 from lib.tables import User
+from lib.arp import parse_arp_data
 
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
@@ -229,6 +230,21 @@ def remove_edge():
     data_graph.remove_edge(edge_data['from'], edge_data['to'], request.json['user_id'], request.json['workspace_id'])
     return 'ok'
 
+def merge_new_node_data(node, new_data):
+    node_updated = False
+    
+    for key in new_data:
+        if not key in node:
+            node[key] = new_data[key]
+            node_updated = True
+        elif node[key] != new_data[key]:
+            # TODO: Create list of values for key instead of ignoring the new data
+            print("WARN: Node with IP %s currently has data '%s' for key '%s', which does not match the new data found, '%s'; ignoring the new data" % (node['ip'], str(node[key]), key, str(new_data[key])))
+        else:
+            print("Node with IP of %s already has the same data for key '%s'; no action necessary" % (node['ip'], key))
+
+    return { 'node_updated': node_updated, 'node': node }
+
 @app.route('/upload_nmap_data', methods=['POST'])
 @login_required
 def upload_nmap_data():
@@ -257,19 +273,39 @@ def upload_nmap_data():
                 node['group'] = 'windows_host'
             elif any([ linux_os_pattern.match(x) for x in host_dict['os_list'] ]):
                 node['group'] = 'linux_host'
-        
-        for key in host_dict:
-            if not key in node:
-                node[key] = host_dict[key]
-                node_updated = True
-            elif node[key] != host_dict[key]:
-                print('WARN: Node with IP %s currently has %s data (%s) which does not match the data found by the nmap scan (%s); ignoring the new data' % (host.ip, key, str(node[key]), str(host_dict[key])))
-            else:
-                print("Node with IP of %s already has the same %s data; no action necessary" % (host.ip, key))
 
+        results = merge_new_node_data(node, host_dict)
+        node_updated |= results['node_updated']
+        node = results['node']
+        
         if node_updated:
             data_graph.upsert_node(node, username, session['workspace_id'])
         
+    return 'ok'
+
+@app.route('/upload_arp_data', methods=['POST'])
+@login_required
+def upload_arp_data():
+    username = request.json['user_id']
+    session['workspace_id'] = request.json['workspace_id']
+    arp_records = parse_arp_data(request.json['data'])
+
+    for arp_record in arp_records:
+        node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
+
+        node_updated = False
+        
+        if node == None:
+            node_updated = True
+            node = { 'id': str(uuid.uuid4()) }
+
+        results = merge_new_node_data(node, arp_record.as_dict())
+        node_updated |= results['node_updated']
+        node = results['node']
+        
+        if node_updated:
+            data_graph.upsert_node(node, username, session['workspace_id'])
+
     return 'ok'
 
 if __name__ == '__main__':
