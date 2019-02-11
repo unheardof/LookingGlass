@@ -194,14 +194,16 @@ function getWorkspaceId() {
     return document.head.querySelector("meta[name='workspace-id']").getAttribute("content");
 }
 
-function postData(methodName, data = {}) {
+function postData(methodName, data = {}, contentType = "application/json") {
     var xhttp = new XMLHttpRequest();
     xhttp.open("POST", methodName, true);
-    xhttp.setRequestHeader("Content-type", "application/json");
+    xhttp.setRequestHeader("Content-type", contentType);
     xhttp.setRequestHeader("X-CSRFToken", getCsrfToken());
+    xhttp.setRequestHeader("User-Id", getUserId());
+    xhttp.setRequestHeader("Workspace-Id", getWorkspaceId());
 
     xhttp.onreadystatechange = function() {
-	// Wait for the state changes to end before doing anythingx
+	// Wait for the state changes to end before doing anything
      	if (this.readyState == 4) {
 	    if (this.status == 200) {
 		refreshGraph();
@@ -217,29 +219,38 @@ function postData(methodName, data = {}) {
 	}
     };
 
-    request = {}
-    request['user_id'] = getUserId();
-    request['workspace_id'] = getWorkspaceId();
-    request['data'] = data;
+    xhttp.send(data);
+}
 
-    xhttp.send(JSON.stringify(request, undefined, 2));
+function postJsonData(methodName, data) {
+    postData(methodName, JSON.stringify(data, undefined, 2), "application/json");
 }
 
 function postGraphData(methodName, data) {
     data.ip = document.getElementById('node-ip').value;
     data.hostname = document.getElementById('node-hostname').value;
     data.group = document.getElementById('node-type').value;
-    postData(methodName, data);
+    postJsonData(methodName, data);
 }
 
 function postFile(methodName, fileName) {
     var reader = new FileReader();
 
     reader.onload = function(evt) {
-	postData(methodName, evt.target.result);
+	postJsonData(methodName, evt.target.result);
     };
 
     reader.readAsText(fileName);
+}
+
+function postBinaryFile(methodName, fileName) {
+    var reader = new FileReader();
+
+    reader.onload = function(evt) {
+	postData(methodName, evt.target.result, 'application/octet-stream');
+    };
+
+    reader.readAsArrayBuffer(fileName);
 }
 
 function openNmapFileSelector() {
@@ -250,12 +261,30 @@ function openArpFileSelector() {
     arpFileSelector.click();
 }
 
+function openPcapFileSelector() {
+    pcapFileSelector.click();
+}
+
+function openNetflowFileSelector() {
+    netflowFileSelector.click();
+}
+
 function uploadNmapFile(files) {
     postFile('upload_nmap_data', files[0]);
 }
 
 function uploadArpFile(files) {
     postFile('upload_arp_data', files[0]);
+}
+
+function uploadPcapFile(files) {
+    // TODO: Get this fixed
+    alert('This feature is not fully supported at this time; please run the extract_uniq_flows.sh script on the PCAP and then upload the result net-flow file using the Upload Net Flow File option');
+    postBinaryFile('upload_pcap_data', files[0]);
+}
+
+function uploadNetflowFile(files) {
+    postFile('upload_net_flow_data', files[0])
 }
 
 function delete_view_specific_data_attrs(data) {
@@ -491,7 +520,7 @@ function init() {
 function logout() {
     // No additional data needs to be send with the logout request
     keepGraphUpToDate = false;
-    postData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
+    postJsonData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
     window.location.href = '/login';
 }
 
@@ -589,7 +618,7 @@ function createWorkspace() {
     if (workspace_name) {
 	data = {};
 	data['workspace_name'] = workspace_name;
-	postData('create_workspace', data);
+	postJsonData('create_workspace', data);
 	refreshWorkspaceTabs();
     }
 }
@@ -598,7 +627,7 @@ function removeWorkspace() {
     var proceed = confirm('Really delete current workspace?')
 
     if (proceed) {
-	postData('delete_workspace', { 'workspace_id': getWorkspaceId() });
+	postJsonData('delete_workspace', { 'workspace_id': getWorkspaceId() });
 	location.reload();
     }
 }
@@ -608,7 +637,7 @@ function shareWorkspace() {
 
     data = {};
     data['authorized_user'] = username;
-    postData('share_workspace', data);
+    postJsonData('share_workspace', data);
 }
 
 function unshareWorkspace() {
@@ -618,5 +647,5 @@ function unshareWorkspace() {
 
     data = {};
     data['unauthorized_user'] = username;
-    postData('unshare_workspace', data);
+    postJsonData('unshare_workspace', data);
 }

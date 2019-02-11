@@ -1,15 +1,17 @@
-# TODO: Send all traffic over HTTPS
-
+from datetime import datetime
 from flask import Flask, request, render_template, send_from_directory, url_for, redirect, session, Response
 from flask_login import current_user, login_required, LoginManager, login_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
+from scapy.utils import rdpcap
 from wtforms import StringField, PasswordField, SubmitField, validators
 
 import argparse
 import json
+import logging
 import os
 import re
+import threading
 import uuid
 
 from NmapQueryTool.nmap_query import ScanData
@@ -17,8 +19,14 @@ from lib.data_graph import DataGraph
 from lib.tables import User
 from lib.arp import parse_arp_data
 
+BASE_UPLOAD_FOLDER = './user_files'
+
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
+
+log = logging.getLogger('werkzeug')
+log.disabled = True
+app.logger.disabled = True
 
 app.config['SECRET_KEY'] = os.urandom(32)
 
@@ -50,8 +58,23 @@ class RegistrationForm(FlaskForm):
     displayname = StringField('DisplayName')
     submit = SubmitField('Submit')
 
+# Static helper functions
+
 def defaultWorkspaceName():
     return current_user.get_username() + "'s workspace"
+
+def pcap_filename(username):
+    # Use timestamp to keep a record of when the PCAP was uploaded, but add a UUID in case the same user submits
+    # multiple PCAP files in the same second (which is unlikely, but technically possible)
+    return "%s-%s-%s.pcap" % (username, datetime.utcnow().strftime('%Y%m%dT%H%M%S'), str(uuid.uuid4()))
+
+def create_node(node_ip):
+    return {
+        'id': str(uuid.uuid4()),
+        'ip': node_ip
+    }
+
+# API Implementations
     
 @login_manager.user_loader
 def load_user(username):
@@ -126,8 +149,8 @@ def register():
 @app.route('/create_workspace', methods=['POST'])
 @login_required
 def create_workspace():
-    workspace_name = request.json['data']['workspace_name']
-    success = data_graph.create_workspace(request.json['user_id'], workspace_name)
+    workspace_name = request.json['workspace_name']
+    success = data_graph.create_workspace(request.headers.get('user_id'), workspace_name)
 
     if success:
         response = Response()
@@ -141,8 +164,8 @@ def create_workspace():
 @app.route('/delete_workspace', methods=['POST'])
 @login_required
 def delete_workspace():
-    workspace_id = request.json['data']['workspace_id']
-    success = data_graph.delete_workspace(request.json['user_id'], workspace_id)
+    workspace_id = request.json['workspace_id']
+    success = data_graph.delete_workspace(request.headers.get('user_id'), workspace_id)
 
     if success:
         response = Response()
@@ -157,7 +180,7 @@ def delete_workspace():
 @login_required
 def share_workspace():
     workspace_id = request.json['workspace_id']
-    success = data_graph.grant_workspace_access(request.json['user_id'], workspace_id, request.json['data']['authorized_user'])
+    success = data_graph.grant_workspace_access(request.headers.get('user_id'), workspace_id, request.json['authorized_user'])
 
     if success:
         response = Response()
@@ -172,14 +195,14 @@ def share_workspace():
 @login_required
 def unshare_workspace():
     workspace_id = request.json['workspace_id']
-    success = data_graph.revoke_workspace_access(request.json['user_id'], workspace_id, request.json['data']['unauthorized_user'])
+    success = data_graph.revoke_workspace_access(request.headers.get('user_id'), workspace_id, request.json['unauthorized_user'])
 
     if success:
         response = Response()
         response.status_code = 200
         return response
     else:
-        response = Response('Unable to revoke permissions for the %s user for workspace with ID: %s' % (request.json['data']['unauthorized_user'], workspace_id))
+        response = Response('Unable to revoke permissions for the %s user for workspace with ID: %s' % (request.json['unauthorized_user'], workspace_id))
         response.status_code = 403 # Forbidden
         return response
 
@@ -208,26 +231,26 @@ def get_graph_data():
 @app.route('/upsert_node', methods=['POST'])
 @login_required
 def upsert_node():
-    data_graph.upsert_node(request.json['data'], request.json['user_id'], request.json['workspace_id'])
+    data_graph.upsert_node(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
 @app.route('/add_edge', methods=['POST'])
 @login_required
 def add_edge():
-    data_graph.add_edge(request.json['data'], request.json['user_id'], request.json['workspace_id'])
+    data_graph.add_edge(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
 @app.route('/remove_node', methods=['POST'])
 @login_required
 def remove_node():
-    data_graph.remove_node(request.json['data'], request.json['user_id'], request.json['workspace_id'])
+    data_graph.remove_node(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
 @app.route('/remove_edge', methods=['POST'])
 @login_required
 def remove_edge():
-    edge_data = request.json['data']
-    data_graph.remove_edge(edge_data['from'], edge_data['to'], request.json['user_id'], request.json['workspace_id'])
+    edge_data = request.json
+    data_graph.remove_edge(edge_data['from'], edge_data['to'], request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
 def merge_new_node_data(node, new_data):
@@ -248,9 +271,9 @@ def merge_new_node_data(node, new_data):
 @app.route('/upload_nmap_data', methods=['POST'])
 @login_required
 def upload_nmap_data():
-    nmap_data = request.json['data']
-    username = request.json['user_id']
-    session['workspace_id'] = request.json['workspace_id']
+    nmap_data = request.json
+    username = request.headers.get('user_id')
+    session['workspace_id'] = request.headers.get('workspace_id')
     
     data = ScanData.create_from_nmap_data(nmap_data.encode('utf-8'))
     
@@ -261,7 +284,7 @@ def upload_nmap_data():
         
         if node == None:
             node_updated = True
-            node = { 'id': str(uuid.uuid4()) }
+            node = create_node(host.ip)
 
         host_dict = host.as_dict()
 
@@ -286,9 +309,9 @@ def upload_nmap_data():
 @app.route('/upload_arp_data', methods=['POST'])
 @login_required
 def upload_arp_data():
-    username = request.json['user_id']
-    session['workspace_id'] = request.json['workspace_id']
-    arp_records = parse_arp_data(request.json['data'])
+    username = request.headers.get('user_id')
+    session['workspace_id'] = request.headers.get('workspace_id')
+    arp_records = parse_arp_data(request.json)
 
     for arp_record in arp_records:
         node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
@@ -297,7 +320,7 @@ def upload_arp_data():
         
         if node == None:
             node_updated = True
-            node = { 'id': str(uuid.uuid4()) }
+            node = create_node(arp_record.address)
 
         results = merge_new_node_data(node, arp_record.as_dict())
         node_updated |= results['node_updated']
@@ -308,6 +331,77 @@ def upload_arp_data():
 
     return 'ok'
 
+# Reference: http://flask.pocoo.org/docs/1.0/patterns/fileuploads/
+@app.route('/upload_pcap_data', methods=['POST'])
+@login_required
+def upload_pcap_data():
+    username = request.headers.get('user_id')
+    session['workspace_id'] = request.headers.get('workspace_id')
+
+    directory_path = os.path.join(BASE_UPLOAD_FOLDER, username, 'pcaps')
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+    file_path = os.path.join(directory_path, pcap_filename(username))
+    
+    with open(file_path, 'w') as f:
+        f.write(request.data)
+
+    # TODO: Implement functionality for parsing the PCAP file and pulling information into the graph
+    
+    return 'ok'
+
+# Expected data format:
+#
+# 192.168.0.1 172.3.4.35
+# 10.3.4.5 9.2.34.5
+#
+@app.route('/upload_net_flow_data', methods=['POST'])
+@login_required
+def upload_net_flow():
+    username = request.headers.get('user_id')
+    session['workspace_id'] = request.headers.get('workspace_id')
+    error = None
+    
+    for line in request.data.decode('string_escape').split("\n"):
+        stripped_line = line.strip().replace('\"', '').replace('\'', '')
+
+        if len(stripped_line) == 0:
+            continue
+
+        addresses = stripped_line.split(' ')
+
+        if len(addresses) != 2:
+            response = Response("Provided net flow data did not have the expected format; expect each line to be of the form '<Source IP Address> <Destination IP Address>'")
+            response.status_code = 400 # Bad request
+            return response
+
+        src_ip = addresses[0].strip()
+        dst_ip = addresses[1].strip()
+
+        src_node = data_graph.get_node_by_ip(src_ip, username, session['workspace_id'])
+        dst_node = data_graph.get_node_by_ip(dst_ip, username, session['workspace_id'])
+
+        new_edge = False
+        if src_node == None:
+            src_node = create_node(src_ip)
+            data_graph.upsert_node(src_node, username, session['workspace_id'])
+            new_edge = True
+
+        if dst_node == None:
+            dst_node = create_node(dst_ip)
+            data_graph.upsert_node(dst_node, username, session['workspace_id'])
+            new_edge = True
+
+        if new_edge or not data_graph.does_edge_exist(src_ip, dst_ip, username, session['workspace_id']):
+            edge = { 'from': src_node['id'], 'to': dst_node['id'] }
+            data_graph.add_edge(edge, username, session['workspace_id'])
+        
+    return 'ok'
+
+# TODO: Also add support for importing SiLK NetFlow data (can convert PCAP's using the rwp2yaf2silk tool
+
 if __name__ == '__main__':
-    # TODO: pip install pyopenssl
-    app.run(ssl_context='adhoc')
+    # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
+    #app.run(ssl_context='adhoc', threaded=True)
+    app.run(threaded=True)

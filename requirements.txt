@@ -16,4 +16,6 @@ Werkzeug==0.14.1
 SQLAlchemy==1.2.12
 bcrypt
 passlibd
-pyopenssl
+scapy
+pyOpenSSL
+celery

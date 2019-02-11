@@ -69,6 +69,8 @@
 
 	<input type="file" id="nmapFileSelector" style="display:none" onchange="uploadNmapFile(this.files)" />
 	<input type="file" id="arpFileSelector" style="display:none" onchange="uploadArpFile(this.files)" />
+	<input type="file" id="pcapFileSelector" style="display:none" onchange="uploadPcapFile(this.files)" />
+	<input type="file" id="netflowFileSelector" style="display:none" onchange="uploadNetflowFile(this.files)" />
 
 	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
 	<h1>Hi {{ current_user.get_username() }}</h1>
@@ -80,6 +82,8 @@
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a><br><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="arpFileSelectOpen" onclick="openArpFileSelector()">Upload ARP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="pcapFileSelectOpen" onclick="openPcapFileSelector()">Upload PCAP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="netflowFileSelectOpen" onclick="openNetflowFileSelector()">Upload Net Flow data</a><br><br>
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="logoutControl" onclick="logout()">Logout</a>
       </div>

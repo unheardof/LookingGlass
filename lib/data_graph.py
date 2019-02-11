@@ -199,7 +199,6 @@ class DataGraph:
             version_number = new_version_number,
             date_time = datetime.datetime.utcnow()
         )
-
         new_node = Node.from_dict(node_obj_dict, workspace_id)
         new_node.version_number = new_version_number
 
@@ -276,9 +275,25 @@ class DataGraph:
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
         
-        edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, workspace_id = workspace_id).first()
+        edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).first()
         edge.active = False
         session.add(edge)
         session.commit()
+
+    def does_edge_exist(self, src_ip, dst_ip, username, workspace_id):
+        session = self.create_session()
+
+        if not self.can_user_access_workspace(session, username, workspace_id):
+            return False
+
+        src_node = session.query(Node).filter_by(active = True, ip = src_ip, workspace_id = workspace_id).first()
+        dst_node = session.query(Node).filter_by(active = True, ip = dst_ip, workspace_id = workspace_id).first()
+
+        if not (src_node and dst_node):
+            return False
+
+        edge = session.query(Edge).filter_by(active = True, source_node_id = src_node.id, destination_node_id = dst_node.id, workspace_id = workspace_id).first()
+
+        return not edge is None
+
         
-    # TODO: add functions for merging additional data (NMAP, PCAP, ARP, etc.) into the graph data
