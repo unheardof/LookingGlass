@@ -7,6 +7,7 @@ from scapy.utils import rdpcap
 from wtforms import StringField, PasswordField, SubmitField, validators
 
 import argparse
+import io
 import json
 import logging
 import os
@@ -23,10 +24,6 @@ BASE_UPLOAD_FOLDER = './user_files'
 
 app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
-
-log = logging.getLogger('werkzeug')
-log.disabled = True
-app.logger.disabled = True
 
 app.config['SECRET_KEY'] = os.urandom(32)
 
@@ -274,8 +271,7 @@ def upload_nmap_data():
     nmap_data = request.json
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
-    
-    data = ScanData.create_from_nmap_data(nmap_data.encode('utf-8'))
+    data = ScanData.create_from_nmap_data(io.StringIO(nmap_data))
     
     for host in data.host_data_list():
         node = data_graph.get_node_by_ip(host.ip, username, session['workspace_id'])
@@ -402,6 +398,20 @@ def upload_net_flow():
 # TODO: Also add support for importing SiLK NetFlow data (can convert PCAP's using the rwp2yaf2silk tool
 
 if __name__ == '__main__':
+    verbose = False
+    parser = argparse.ArgumentParser(description='Development mode command line options')
+    parser.add_argument('-v', '--verbose', action='store_true')
+    args = parser.parse_args()
+
+    if not args.verbose:
+        # Silence Flask server logging
+        log = logging.getLogger('werkzeug')
+        log.disabled = True
+        app.logger.disabled = True
+    
     # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
     #app.run(ssl_context='adhoc', threaded=True)
     app.run(threaded=True)
+
+
+
