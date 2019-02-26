@@ -260,6 +260,15 @@ class DataGraph:
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
 
+        current_version_number = ChangeLog.curr_version_number(session)
+
+        new_changelog_row = ChangeLog(
+            version_number = current_version_number + 1,
+            date_time = datetime.datetime.utcnow()
+        )
+
+        session.add(new_changelog_row)
+        
         edges_from_node = session.query(Edge).filter_by(active = True, source_node_id = node_id, workspace_id = workspace_id).all()
 
         for edge in edges_from_node:
@@ -278,7 +287,16 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
+        
+        current_version_number = ChangeLog.curr_version_number(session)
 
+        new_changelog_row = ChangeLog(
+            version_number = current_version_number + 1,
+            date_time = datetime.datetime.utcnow()
+        )
+
+        session.add(new_changelog_row)
+        
         edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).first()
         edge.active = False
         session.add(edge)
