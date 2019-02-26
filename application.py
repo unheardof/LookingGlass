@@ -15,7 +15,7 @@ import re
 import threading
 import uuid
 
-from NmapQueryTool.nmap_query import ScanData
+from NmapQueryTool.lib.scan_data import ScanData
 from lib.data_graph import DataGraph
 from lib.tables import User
 from lib.arp import parse_arp_data
@@ -72,11 +72,15 @@ def create_node(node_ip):
     }
 
 # API Implementations
-    
+
 @login_manager.user_loader
 def load_user(username):
     return data_graph.load_user(username)
-    
+
+@app.teardown_request
+def remove_session(ex=None):
+    data_graph.close_session()
+
 @app.route('/', methods=['GET'])
 def index():
     if current_user.is_authenticated:
@@ -84,7 +88,7 @@ def index():
             session['workspace_id'] = data_graph.default_workspace_for_user(current_user.get_username()).id
 
         session['workspaces'] = [ { 'name': w.name, 'id': w.id } for w in data_graph.workspaces_for_user(current_user.get_username()) ]
-        
+
         return render_template('infrastructure_graph.html')
     else:
         return render_template('login.html', form=LoginForm())
@@ -94,11 +98,11 @@ def index():
 def login():
     form = LoginForm(request.form)
     error = None
-    
+
     if form.validate_on_submit():
         user = data_graph.load_user(form.username.data)
 
-        if not user is None:
+        if not user is None and user.validate_password(form.password.data.encode('utf-8')):
             login_user(user, remember=True)
 
             available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
@@ -108,11 +112,12 @@ def login():
             else:
                 session['workspace_id'] = available_workspaces[0].id
 
+
             print('Logged in successfully')
             return redirect(url_for('index'))
         else:
             error = 'Invalid credentials'
-            
+
     return render_template('login.html', form=form, error=error)
 
 @app.route('/logout', methods=['GET', 'POST'])
@@ -127,20 +132,23 @@ def register():
     form = RegistrationForm(request.form)
     error = None
 
-    if request.method == 'POST' and form.validate():
-        user = data_graph.load_user(form.username.data)
+    if request.method == 'POST':
+        if form.validate():
+            user = data_graph.load_user(form.username.data)
 
-        if user is None:
-            if form.password.data != form.confirm.data:
-                error = 'Passwords do not match'
+            if user is None:
+                if form.password.data != form.confirm.data:
+                    error = 'Passwords do not match'
+                else:
+                    data_graph.create_user(form.username.data, form.password.data.encode('utf-8'))
+
+                    print('User %s has been registered' % form.username.data)
+                    return redirect(url_for('login'))
             else:
-                data_graph.create_user(form.username.data.encode('utf-8'), form.password.data.encode('utf-8'))
-                
-                print('User %s has been registered' % form.username.data)
-                return redirect(url_for('login'))
+                error = 'User with username %s already exists' % form.username.data
         else:
-            error = 'User with username %s already exists' % form.username.data
-    
+            error = 'Form validation failed; passwords must match'
+
     return render_template('register_user.html', form=form, error=error)
 
 @app.route('/create_workspace', methods=['POST'])
@@ -161,7 +169,7 @@ def create_workspace():
 @app.route('/delete_workspace', methods=['POST'])
 @login_required
 def delete_workspace():
-    workspace_id = request.json['workspace_id']
+    workspace_id = request.headers.get('workspace_id')
     success = data_graph.delete_workspace(request.headers.get('user_id'), workspace_id)
 
     if success:
@@ -176,7 +184,7 @@ def delete_workspace():
 @app.route('/share_workspace', methods=['POST'])
 @login_required
 def share_workspace():
-    workspace_id = request.json['workspace_id']
+    workspace_id = request.headers.get('workspace_id')
     success = data_graph.grant_workspace_access(request.headers.get('user_id'), workspace_id, request.json['authorized_user'])
 
     if success:
@@ -191,7 +199,7 @@ def share_workspace():
 @app.route('/unshare_workspace', methods=['POST'])
 @login_required
 def unshare_workspace():
-    workspace_id = request.json['workspace_id']
+    workspace_id = request.headers.get('workspace_id')
     success = data_graph.revoke_workspace_access(request.headers.get('user_id'), workspace_id, request.json['unauthorized_user'])
 
     if success:
@@ -208,13 +216,13 @@ def unshare_workspace():
 def get_workspaces_for_user():
     session['workspaces'] = [ { 'name': w.name, 'id': w.id } for w in data_graph.workspaces_for_user(current_user.get_username()) ]
     return Response(json.dumps(session['workspaces']))
-    
+
 @app.route('/graph_data', methods=['GET'])
 def get_graph_data():
     try:
         if current_user.is_authenticated:
             graph_json = data_graph.current_graph_json(request.args.get('user_id'), request.args.get('workspace_id'))
-            
+
             if graph_json is None:
                 return Response('User not allowed to access the requested workspace', status=403)
             else:
@@ -252,7 +260,7 @@ def remove_edge():
 
 def merge_new_node_data(node, new_data):
     node_updated = False
-    
+
     for key in new_data:
         if not key in node:
             node[key] = new_data[key]
@@ -272,12 +280,12 @@ def upload_nmap_data():
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
     data = ScanData.create_from_nmap_data(io.StringIO(nmap_data))
-    
+
     for host in data.host_data_list():
         node = data_graph.get_node_by_ip(host.ip, username, session['workspace_id'])
 
         node_updated = False
-        
+
         if node == None:
             node_updated = True
             node = create_node(host.ip)
@@ -287,7 +295,7 @@ def upload_nmap_data():
         if 'os_list' in host_dict:
             windows_os_pattern = re.compile('.*[Ww]indows.*')
             linux_os_pattern = re.compile('.*[Ll]inux.*')
-            
+
             if any([ windows_os_pattern.match(x) for x in host_dict['os_list'] ]):
                 node['group'] = 'windows_host'
             elif any([ linux_os_pattern.match(x) for x in host_dict['os_list'] ]):
@@ -296,10 +304,10 @@ def upload_nmap_data():
         results = merge_new_node_data(node, host_dict)
         node_updated |= results['node_updated']
         node = results['node']
-        
+
         if node_updated:
             data_graph.upsert_node(node, username, session['workspace_id'])
-        
+
     return 'ok'
 
 @app.route('/upload_arp_data', methods=['POST'])
@@ -313,7 +321,7 @@ def upload_arp_data():
         node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
 
         node_updated = False
-        
+
         if node == None:
             node_updated = True
             node = create_node(arp_record.address)
@@ -321,7 +329,7 @@ def upload_arp_data():
         results = merge_new_node_data(node, arp_record.as_dict())
         node_updated |= results['node_updated']
         node = results['node']
-        
+
         if node_updated:
             data_graph.upsert_node(node, username, session['workspace_id'])
 
@@ -339,12 +347,12 @@ def upload_pcap_data():
         os.makedirs(directory_path)
 
     file_path = os.path.join(directory_path, pcap_filename(username))
-    
+
     with open(file_path, 'w') as f:
         f.write(request.data)
 
     # TODO: Implement functionality for parsing the PCAP file and pulling information into the graph
-    
+
     return 'ok'
 
 # Expected data format:
@@ -358,8 +366,8 @@ def upload_net_flow():
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
     error = None
-    
-    for line in request.data.decode('string_escape').split("\n"):
+
+    for line in request.data.decode('utf-8').replace('\\n', '\n').split("\n"):
         stripped_line = line.strip().replace('\"', '').replace('\'', '')
 
         if len(stripped_line) == 0:
@@ -392,7 +400,7 @@ def upload_net_flow():
         if new_edge or not data_graph.does_edge_exist(src_ip, dst_ip, username, session['workspace_id']):
             edge = { 'from': src_node['id'], 'to': dst_node['id'] }
             data_graph.add_edge(edge, username, session['workspace_id'])
-        
+
     return 'ok'
 
 # TODO: Also add support for importing SiLK NetFlow data (can convert PCAP's using the rwp2yaf2silk tool
@@ -408,10 +416,7 @@ if __name__ == '__main__':
         log = logging.getLogger('werkzeug')
         log.disabled = True
         app.logger.disabled = True
-    
+
     # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
     #app.run(ssl_context='adhoc', threaded=True)
     app.run(threaded=True)
-
-
-

@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine, and_
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, and_
 import boto3
 import os.path
 import sys
@@ -13,24 +14,27 @@ class DataGraph:
         # Using SERIALIZABLE isolation ensures that any queried
         # information will not change in the midst of a transaction
         self.engine = create_engine('sqlite:///looking_glass.db', isolation_level='SERIALIZABLE')
-        
+        self.Session = scoped_session(sessionmaker(bind=self.engine, autocommit=False))
+
         setup_tables(self.engine)
 
     # A new transaction is implicitly started when a session is first used until the session.commit() method is called
     def create_session(self):
-        Session = sessionmaker(bind=self.engine, autocommit=False)
-        return Session()
+        return self.Session()
+
+    def close_session(self):
+        self.Session.remove()
 
     def load_user(self, user_id):
         return self.create_session().query(User).filter_by(id = user_id).first()
 
     def create_user(self, username, password):
         session = self.create_session()
-        
+
         new_user = User(username, password)
         session.add(new_user)
         session.commit()
-    
+
     def node_as_dict_with_additional_data(self, session, node):
         additional_node_data_list = session.query(AdditionalNodeData).filter_by(node_id = node.id).all()
         node_data = node.serializable_dict()
@@ -71,7 +75,7 @@ class DataGraph:
         session.commit()
 
         return True
-    
+
     def grant_workspace_access(self, owning_user_id, workspace_id, authorized_user_id):
         session = self.create_session()
 
@@ -100,12 +104,12 @@ class DataGraph:
 
         if user_authorization is None:
             return False
-        
+
         session.delete(user_authorization)
         session.commit()
 
         return True
-    
+
     def can_user_access_workspace(self, session, username, workspace_id):
         access_allowed = False
         owned_workspace = session.query(Workspace).filter_by(active = True, owning_user = username, id = workspace_id).first()
@@ -132,7 +136,7 @@ class DataGraph:
     def default_workspace_for_user(self, username):
         session = self.create_session()
         return session.query(Workspace).filter_by(owning_user = username, default = True).first()
-    
+
     def current_graph_json(self, username, workspace_id):
         session = self.create_session()
 
@@ -146,7 +150,7 @@ class DataGraph:
         for node in nodes:
             node_data = self.node_as_dict_with_additional_data(session, node)
             nodes_by_id[node.id] = node_data
-        
+
         for edge in session.query(Edge).filter_by(active = True, workspace_id = workspace_id).all():
             if 'connections' in nodes_by_id[edge.source_node_id]:
                 nodes_by_id[edge.source_node_id]['connections'].append(edge.destination_node_id)
@@ -155,7 +159,7 @@ class DataGraph:
 
         return {
             'current_version_number': current_version_number,
-            'nodes': nodes_by_id.values()
+            'nodes': list(nodes_by_id.values()) # Convert dict_values object to a list (https://markhneedham.com/blog/2017/03/19/python-3-typeerror-object-type-dict_values-not-json-serializable/)
         }
 
     def get_node_by_ip(self, node_ip, username, workspace_id):
@@ -163,20 +167,20 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         node = session.query(Node).filter_by(active = True, ip = node_ip, workspace_id = workspace_id).first()
 
         if node:
             node = self.node_as_dict_with_additional_data(session, node)
 
         return node
-    
+
     def upsert_node(self, node_dict, username, workspace_id):
         session = self.create_session()
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         # Lock the existing node record
         if 'id' in node_dict:
             for n in session.query(Node).filter_by(active = True, id = node_dict['id'], workspace_id = workspace_id).all():
@@ -204,7 +208,7 @@ class DataGraph:
 
         session.add(new_node)
         session.add(new_changelog_row)
-        
+
         for key in additional_node_data:
             session.add(
                 AdditionalNodeData(
@@ -221,12 +225,12 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         current_version_number = ChangeLog.curr_version_number(session)
 
         from_node_id = edge['from']
         source_node = session.query(Node).filter_by(active = True, id = from_node_id, workspace_id = workspace_id).first()
-        
+
         if not source_node:
             session.rollback()
             raise "Unable to create edge; from node with ID of %s does not exist" % from_node_id
@@ -245,7 +249,7 @@ class DataGraph:
             workspace_id = workspace_id,
             active = True
             )
-        
+
         session.add(new_edge)
         session.add(new_changelog_row)
         session.commit()
@@ -255,18 +259,18 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         edges_from_node = session.query(Edge).filter_by(active = True, source_node_id = node_id, workspace_id = workspace_id).all()
-        
+
         for edge in edges_from_node:
             edge.active = False
 
         session.add_all(edges_from_node)
-            
+
         node = session.query(Node).filter_by(active = True, id = node_id, workspace_id = workspace_id).first()
         node.active = False
         session.add(node)
-        
+
         session.commit()
 
     def remove_edge(self, from_node_id, to_node_id, username, workspace_id):
@@ -274,7 +278,7 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
+
         edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).first()
         edge.active = False
         session.add(edge)
@@ -295,5 +299,3 @@ class DataGraph:
         edge = session.query(Edge).filter_by(active = True, source_node_id = src_node.id, destination_node_id = dst_node.id, workspace_id = workspace_id).first()
 
         return not edge is None
-
-        

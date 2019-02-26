@@ -1,0 +1,35 @@
+###
+### Setup from scratch
+###
+### Reference: https://docs.python-guide.org/dev/virtualenvs/
+###
+
+# Create new virtual environment:
+
+virtualenv [virtual env name; normally venv]
+
+# Set Python version
+
+virtualenv -p /usr/bin/python3.6 [venv name]
+
+# Activate environment; you can then "pip install" packages to the environment instead of for the current user
+
+source venv/bin/activate
+
+# Freeze requirements (must activate environment first)
+
+pip freeze > requirements.txt
+
+# Install all packages in a requirements file
+
+pip install -r requirements.txt
+
+# Deactivate the environment; will go back to referencing use packages and default Python
+
+deactivate
+
+###
+### Setup from requirements file (if checking out repo for the first time)
+###
+
+virtualenv --no-site-packages --distribute .env && source .env/bin/activate && pip install -r requirements.txt

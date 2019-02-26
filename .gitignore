@@ -1,5 +1,6 @@
 *.pyc
 py3env/*
+venv/
 *~
 
 # Elastic Beanstalk Files

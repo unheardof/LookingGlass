@@ -9,29 +9,33 @@ var keepGraphUpToDate = true;
 var options = {
     locale: 'en',
     interaction: {
-        multiselect: true,
+	multiselect: true,
     },
     physics:{
 	enabled: true,
+	stabilization: {
+	    enabled: true,
+	    iterations: 500 // default is 1000; decreasing iterations to improve performance
+	},
 	hierarchicalRepulsion: {
-	    centralGravity: 2.0,
+	    centralGravity: 0.5,
 	    springLength: 10,
 	    springConstant: 1.5,
 	    nodeDistance: 300,
 	    damping: 0.9
 	},
-        solver: 'hierarchicalRepulsion'
+	solver: 'hierarchicalRepulsion'
     },
     layout: {
 	randomSeed: seed,
-        improvedLayout: true,
+	improvedLayout: true,
 	hierarchical: {
 	    enabled: false
 	}
     },
     edges: {
 	smooth: {
-            type: "continuous"
+	    enabled: false
 	}
     },
     groups: {
@@ -74,7 +78,7 @@ var options = {
 		size: 15,
 		color: '#ffffff'
 	    }
-        },
+	},
 	linux_host: {
 	    shape: 'image',
 	    image: 'static/images/linux-icon.png',
@@ -98,7 +102,7 @@ var options = {
 	    document.getElementById('operation').innerHTML = "Add Node";
 	    document.getElementById('node-ip').value = data.title;
 	    document.getElementById('node-hostname').value = data.label;
-            document.getElementById('node-type').value = data.group;
+	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
 	    document.getElementById('network-popUp').style.display = 'block';
@@ -117,7 +121,7 @@ var options = {
 
 	addEdge: function (data, callback) {
 	    // At present, edge labels are not used for anything
-            // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
+	    // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
 	    data.label = '';
 
 	    if (data.from == data.to) {
@@ -134,12 +138,12 @@ var options = {
 	},
 	deleteNode: function (data, callback) {
 	    removeNode(data);
-            callback(data);
+	    callback(data);
 	},
-        deleteEdge: function (data, callback) {
+	deleteEdge: function (data, callback) {
 	    removeEdge(data);
-            callback(data);
-        }
+	    callback(data);
+	}
     }
 };
 
@@ -204,7 +208,7 @@ function postData(methodName, data = {}, contentType = "application/json") {
 
     xhttp.onreadystatechange = function() {
 	// Wait for the state changes to end before doing anything
-     	if (this.readyState == 4) {
+	if (this.readyState == 4) {
 	    if (this.status == 200) {
 		refreshGraph();
 	    } else {
@@ -331,21 +335,21 @@ function removeEdge(call_data) {
 
 function objectToArray(obj) {
     return Object.keys(obj).map(function (key) {
-        obj[key].id = key;
-        return obj[key];
+	obj[key].id = key;
+	return obj[key];
     });
 }
 
 function create_network(container, data, options) {
     network = new vis.Network(container, data, options);
-    
+
     // Based on https://stackoverflow.com/questions/35906493/accessing-node-data-in-vis-js-click-handler
     network.on('click', function(properties) {
 	var popupDiv = document.getElementById('node-popup');
 
 	if('nodes' in properties && properties.nodes.length != 0) {
-     	    var ids = properties.nodes;
-     	    var clickedNodes = data.nodes.get(ids);
+	    var ids = properties.nodes;
+	    var clickedNodes = data.nodes.get(ids);
 
 	    var displayLines = [];
 
@@ -368,7 +372,7 @@ function create_network(container, data, options) {
 			    }
 			}
 		    }
-		    
+
 		    if('os_list' in elem && elem['os_list'].length != 0) {
 			os_list_str = elem['os_list'].replace(/'/g, "\"");
 
@@ -387,7 +391,7 @@ function create_network(container, data, options) {
 
 			for (var portNumber in portData) {
 			    var dataForPort = portData[portNumber];
-			    
+
 			    displayLines.push('<hr>Port Number: ' + portNumber);
 
 			    for (var dataKey in dataForPort) {
@@ -405,8 +409,8 @@ function create_network(container, data, options) {
 	    document.getElementById('node-popup').innerHTML = displayLines.join('<br>');
 
 	    popupDiv.style.left = properties.pointer.DOM.x + 'px';
-     	    popupDiv.style.top = properties.pointer.DOM.y + 'px';
-     	    popupDiv.style.display = 'block';
+	    popupDiv.style.top = properties.pointer.DOM.y + 'px';
+	    popupDiv.style.display = 'block';
 	} else {
 	    popupDiv.style.display = 'none'; // Hide the pop-up if it's visible
 	}
@@ -419,12 +423,12 @@ function refreshGraph(forceRedraw = false) {
     if (!keepGraphUpToDate) {
 	return null;
     }
-    
+
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
 	// TODO: Add error handling
 	if (this.readyState == 4 && keepGraphUpToDate) {
-            var graphData = JSON.parse(xmlHttp.responseText);
+	    var graphData = JSON.parse(xmlHttp.responseText);
 
 	    if (forceRedraw || parseInt(graphData['current_version_number']) > currGraphVersion) {
 		// Hide the node data pop-up
@@ -434,10 +438,10 @@ function refreshGraph(forceRedraw = false) {
 		currGraphVersion = parseInt(graphData['current_version_number']);
 
 		var data = {
-                    nodes: getNodeData(graphData['nodes']),
-                    edges: getEdgeData(graphData['nodes'])
+		    nodes: getNodeData(graphData['nodes']),
+		    edges: getEdgeData(graphData['nodes'])
 		}
-		
+
 		var container = document.getElementById('mynetwork');
 		network = create_network(container, data, options);
 	    }
@@ -459,7 +463,7 @@ function getNodeData(data) {
 	function(elem, index, array) {
 	    elem.title = elem.ip;
 	    elem.label = elem.hostname;
-            networkNodes.push(elem);
+	    networkNodes.push(elem);
 	}
     );
 
@@ -468,9 +472,9 @@ function getNodeData(data) {
 
 function getNodeById(data, id) {
     for (var n = 0; n < data.length; n++) {
-        if (data[n].id == id) {  // double equals since id can be numeric or string
-            return data[n];
-        }
+	if (data[n].id == id) {  // double equals since id can be numeric or string
+	    return data[n];
+	}
     };
 
     console.warn('Cannot find node with ID \'' + id + '\' in data; node may have been deleted');
@@ -481,8 +485,8 @@ function getEdgeData(data) {
 
     data.forEach(function(node) {
 	if(typeof node !== 'undefined' && typeof node.connections !== 'undefined') {
-            // add the connection
-            node.connections.forEach(function(connId, cIndex, conns) {
+	    // add the connection
+	    node.connections.forEach(function(connId, cIndex, conns) {
 		networkEdges.push({from: node.id, to: connId});
 		let cNode = getNodeById(data, connId);
 
@@ -499,7 +503,7 @@ function getEdgeData(data) {
 		    };
 		}
 	    });
-        };
+	};
     });
 
     return new vis.DataSet(networkEdges);
@@ -507,13 +511,13 @@ function getEdgeData(data) {
 
 function objectToArray(obj) {
     return Object.keys(obj).map(function (key) {
-        obj[key].id = key;
-        return obj[key];
+	obj[key].id = key;
+	return obj[key];
     });
 }
 
 function init() {
-    draw(); 
+    draw();
     refreshGraph(); // Do an initial load of the current graph data
 }
 
@@ -559,7 +563,7 @@ function refreshWorkspaceTabs() {
     xmlHttp.onreadystatechange = function() {
 	if (this.readyState == 4) {
 	    // TODO: Add error handling
-            var workspaces = JSON.parse(xmlHttp.responseText);
+	    var workspaces = JSON.parse(xmlHttp.responseText);
 
 	    var workspaceTabsDiv = document.getElementById('workspace-tabs');
 	    var currentTabs = workspaceTabsDiv.children;
@@ -602,7 +606,7 @@ function refreshWorkspaceTabs() {
 	    }
 	}
     };
-    
+
     xmlHttp.open("GET", "workspaces", true ); // true for asynchronous request
     xmlHttp.send();
 }
