@@ -101,7 +101,7 @@ var options = {
 	    // filling in the popup DOM elements
 	    document.getElementById('operation').innerHTML = "Add Node";
 	    document.getElementById('node-ip').value = data.title;
-	    document.getElementById('node-hostname').value = data.label;
+	    document.getElementById('node-hostname').value = data.hostname;
 	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
@@ -111,7 +111,7 @@ var options = {
 	    // filling in the popup DOM elements
 	    document.getElementById('operation').innerHTML = "Edit Node";
 	    document.getElementById('node-ip').value = data.title;
-	    document.getElementById('node-hostname').value = data.label;
+	    document.getElementById('node-hostname').value = data.hostname;
 	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 
@@ -361,7 +361,7 @@ function create_network(container, data, options) {
 		    }
 
 		    displayLines.push('IP: ' + elem['title']);
-		    displayLines.push('Hostname: ' + elem['label']);
+		    displayLines.push('Hostname: ' + elem['hostname']);
 
 		    if('device_types' in elem) {
 			device_type_list = JSON.parse(elem['device_types']);
@@ -462,7 +462,17 @@ function getNodeData(data) {
     data.forEach(
 	function(elem, index, array) {
 	    elem.title = elem.ip;
-	    elem.label = elem.hostname;
+
+	    if (elem.ip == null && elem.hostname == null) {
+		elem.label = '';
+	    } else if (elem.hostname == null) {
+		elem.label = elem.ip;
+	    } else if (elem.ip != null && elem.ip != elem.hostname) {
+		elem.label = elem.ip + "\n" + elem.hostname;
+	    } else {
+		elem.label = elem.hostname;
+	    }
+	    
 	    networkNodes.push(elem);
 	}
     );
