@@ -419,4 +419,6 @@ if __name__ == '__main__':
 
     # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
     #app.run(ssl_context='adhoc', threaded=True)
-    app.run(threaded=True)
+
+    # host='0.0.0.0' enables connections using the local network interface
+    app.run(host='0.0.0.0', threaded=True)

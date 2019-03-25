@@ -10,3 +10,6 @@ user_files/
 !.elasticbeanstalk/*.global.yml
 
 looking_glass.db
+build/*
+dist/*
+looking_glass.egg-info/*

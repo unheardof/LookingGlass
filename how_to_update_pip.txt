@@ -1,0 +1,39 @@
+# Reference: https://packaging.python.org/tutorials/packaging-projects/
+
+1.) Activate virtual environment / make sure you are running Python 3x
+
+    source venv/bin/activate
+
+2.) Remove contents of dist/ directory
+
+    rm dist/*
+
+3.) Update package version in setup.py
+
+4.) Run the setup script to generate new distribution artifacts:
+
+    python setup.py sdist bdist_wheel
+
+5.) Upload to test.pypi.org
+
+    twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+6.) If the virtual environment is active, deactivate it before installing / upgrading the package from Pypi (otherwise it will be added to the virtual environment)
+
+    deactivate
+    
+7.) Install from Test PyPi
+
+    pip install -i https://test.pypi.org/simple/ looking-glass --upgrade
+
+8.) Upload to pypi.org
+
+    twine upload dist/*
+
+9.) Install from PyPi
+
+    pip install looking-glass --upgrade
+
+# Note: files will be installed somewhere like /usr/local/lib/python2.7/dist-packages/NmapQueryTool/nmap_query.py
+#       can run script using that full path (without putting 'python' in front of it; can also setup an alias for it)
+
