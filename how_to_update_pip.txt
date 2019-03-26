@@ -12,7 +12,7 @@
 
 4.) Run the setup script to generate new distribution artifacts:
 
-    python setup.py sdist bdist_wheel
+    python3 setup.py sdist bdist_wheel
 
 5.) Upload to test.pypi.org
 
@@ -24,7 +24,7 @@
     
 7.) Install from Test PyPi
 
-    pip install -i https://test.pypi.org/simple/ looking-glass --upgrade
+    pip3 install -i https://test.pypi.org/simple/ looking-glass --upgrade
 
 8.) Upload to pypi.org
 
@@ -32,8 +32,8 @@
 
 9.) Install from PyPi
 
-    pip install looking-glass --upgrade
+    pip3 install looking-glass --upgrade
 
-# Note: files will be installed somewhere like /usr/local/lib/python2.7/dist-packages/NmapQueryTool/nmap_query.py
+# Note: files will be installed somewhere like /usr/local/lib/pythonX/dist-packages/looking_glass/application.py
 #       can run script using that full path (without putting 'python' in front of it; can also setup an alias for it)
 

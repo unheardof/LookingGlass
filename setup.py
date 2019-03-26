@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
 	name="looking_glass",
-	version="1.0.3",
+	version="1.0.4",
 	author="Timothy Heard",
 	description="Web-based tool for visualizing data from network scanning and reconnaissance tools",
 	long_description=long_description,
