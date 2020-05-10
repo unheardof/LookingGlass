@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Flask, request, render_template, send_from_directory, url_for, redirect, session, Response
 from flask_login import current_user, login_required, LoginManager, login_user, logout_user
 from flask_wtf import FlaskForm
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from scapy.utils import rdpcap
 from wtforms import StringField, PasswordField, SubmitField, validators
 
@@ -21,11 +21,14 @@ from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data
 
+# TODO: Update packages and then update requirements.txt
 BASE_UPLOAD_FOLDER = './user_files'
 
 application = app # Needed by Elastic Beanstalk / WSGI
 
+# Flask WTF CSRF configuration
 app.config['SECRET_KEY'] = os.urandom(32)
+app.config['WTF_CSRF_TIME_LIMIT'] = None # Makes CSRF token valid for the duration of the session
 
 csrf = CSRFProtect(app)
 
@@ -402,6 +405,11 @@ def upload_net_flow():
             data_graph.add_edge(edge, username, session['workspace_id'])
 
     return 'ok'
+
+# TODO: Test
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('csrf_error.html', reason=e.description), 400
 
 # TODO: Also add support for importing SiLK NetFlow data (can convert PCAP's using the rwp2yaf2silk tool
 
