@@ -15,14 +15,14 @@ import re
 import threading
 import uuid
 
+from looking_glass import app
 from NmapQueryTool.lib.scan_data import ScanData
-from lib.data_graph import DataGraph
-from lib.tables import User
-from lib.arp import parse_arp_data
+from looking_glass.lib.data_graph import DataGraph
+from looking_glass.lib.tables import User
+from looking_glass.lib.arp import parse_arp_data
 
 BASE_UPLOAD_FOLDER = './user_files'
 
-app = Flask(__name__)
 application = app # Needed by Elastic Beanstalk / WSGI
 
 app.config['SECRET_KEY'] = os.urandom(32)
@@ -420,5 +420,7 @@ if __name__ == '__main__':
     # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
     #app.run(ssl_context='adhoc', threaded=True)
 
+    # TODO: Add switch based on debug mode or not (default to not)
     # host='0.0.0.0' enables connections using the local network interface
-    app.run(host='0.0.0.0', threaded=True)
+    #app.run(host='0.0.0.0', threaded=True)
+    app.run()
