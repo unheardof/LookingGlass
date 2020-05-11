@@ -3,7 +3,6 @@ body {
 }
 
 div.centered-div {
-    display: block;
     position: absolute;
     margin: auto;
     top: 0;
@@ -20,6 +19,13 @@ div.centered-div {
     font-size: 25px;
 }
 
+#login-div {
+    left: 35%;
+    width: 400px;
+    height: auto;
+    position: relative;
+}
+
 h1 {
     text-align: center;
     font-size: 45px;
@@ -29,21 +35,53 @@ h1 {
 input {
     display: block;
     height: 20px;
-    width: 100%;
-    margin-top: 15px;
-    margin-bottom: 10px;
+    width: 200px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 input[type=submit] {
     height: auto;
-    width: 100%;
-    margin-top: 20px;
+    width: 200px;
     margin-left: auto;
     margin-right: auto;
     padding-left: 10px;
     padding-right: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
-    font-size: 20px;
+    font-size: 18px;
     border-radius: 12px;
+    boder: solid;
+    cursor: pointer;
+}
+
+input[type=submit]:hover {
+    background: #bbb;
+}
+
+button {
+    width: 50px;
+    height: 50px;
+    padding-bottom: 5px;
+    border-radius: 50%;
+    font-size: 35px;
+    position: absolute;
+    top: 25%;
+    bottom: 25%;
+    right: 0px;
+}
+
+table {
+    width: 300px;
+    margin: 0 auto;
+    padding-right: 50px;
+}
+
+tr {
+    margin-left: auto;
+    margin-right: auto;
+    width: 200px;
+    line-height: 0;
 }
