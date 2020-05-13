@@ -7,9 +7,7 @@ else
     pip install virtualenv
 fi
 
-# TODO: Make this less flaky
-# Move to project root directory from bin/
-cd ..
+cd $(dirname "${BASH_SOURCE[0]}")
 
 if ls | grep -E '^venv$' > /dev/null 2> /dev/null; then
     echo 'venv has already been created; continuing'

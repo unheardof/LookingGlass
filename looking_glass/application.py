@@ -21,7 +21,6 @@ from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data
 
-# TODO: Update packages and then update requirements.txt
 BASE_UPLOAD_FOLDER = './user_files'
 
 application = app # Needed by Elastic Beanstalk / WSGI
@@ -406,7 +405,6 @@ def upload_net_flow():
 
     return 'ok'
 
-# TODO: Test
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template('csrf_error.html', reason=e.description), 400
@@ -428,7 +426,5 @@ if __name__ == '__main__':
     # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
     #app.run(ssl_context='adhoc', threaded=True)
 
-    # TODO: Add switch based on debug mode or not (default to not)
     # host='0.0.0.0' enables connections using the local network interface
-    #app.run(host='0.0.0.0', threaded=True)
-    app.run()
+    app.run(host='0.0.0.0', threaded=True)

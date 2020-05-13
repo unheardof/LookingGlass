@@ -1,6 +1,6 @@
 #!/bin/bash
 
-app="docker.looking_glass"
-docker build -t ${app} .
-sudo docker stop docker.looking_glass
-sudo docker start docker.looking_glass
+APP="docker.looking_glass"
+docker stop ${APP}
+docker build -t ${APP} .
+docker start ${APP}
