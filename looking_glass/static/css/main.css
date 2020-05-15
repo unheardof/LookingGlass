@@ -2,27 +2,27 @@
 .isa_info, .isa_success, .isa_warning, .isa_error {
     padding: 6px;
     font-size: 20px;
-    height: fit-contents;
+    height: auto;
 }
 
 .isa_info {
     color: #00529B;
-    background-color: #BDE5F8;
+    background-color: black;
 }
 
 .isa_success {
     color: #4F8A10;
-    background-color: #DFF2BF;
+    background-color: black;
 }
 
 .isa_warning {
     color: #9F6000;
-    background-color: #FEEFB3;
+    background-color: black;
 }
 
 .isa_error {
     color: #D8000C;
-    background-color: #FFD2D2;
+    background-color: black;
 }
 
 .isa_info i, .isa_success i, .isa_warning i, .isa_error i {

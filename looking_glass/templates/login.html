@@ -12,28 +12,26 @@
       </div>
     {% endif %}
 
-    <div class="centered-div" id="login-container" >
-      <h1>Login</h1>
-      <div id="login-div">
+    <div class="container">
       <form action="/login" method="post">
 	<table>
-      	  <tr>
-      	    <td><p>Username:</p></td>
-      	    <td><input type="text" placeholder="username" name="username" value="{{request.form.username}}"></td>
+	  <tr>
+	    <td><p class="form_text">Username:</p></td>
+	    <td><input type="text" placeholder="username" name="username" value="{{request.form.username}}" required></td>
       	  </tr>
       	  <tr>
-      	    <td><p>Password:</p></td>
-      	    <td><input type="password" placeholder="password" name="password" value="{{request.form.password}}"></td>
-      	  </tr>
+      	    <td><p class="form_text">Password:</p></td>
+      	    <td><input type="password" placeholder="password" name="password" value="{{request.form.password}}" required></td>
+	  </tr>
 	</table>
-      
-	<button type="submit" id="login">&#8250;</button>
+
+	<input type="submit" id="login" value="Login"/>
 	{{ form.csrf_token }}
       </form>
-      </div>
-	
+
       <form action="/register">
-	<input type="submit" value="Register New User"/>
+	<input type="submit" value="Register"/>
+	{{ form.csrf_token }}
       </form>
     </div>
   </body>

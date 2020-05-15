@@ -13,7 +13,7 @@ class DataGraph:
     def __init__(self):
         # Using SERIALIZABLE isolation ensures that any queried
         # information will not change in the midst of a transaction
-        self.engine = create_engine('sqlite:///looking_glass.db', isolation_level='SERIALIZABLE')
+        self.engine = create_engine('sqlite:////tmp/looking_glass.db', isolation_level='SERIALIZABLE')
         self.Session = scoped_session(sessionmaker(bind=self.engine, autocommit=False))
 
         setup_tables(self.engine)

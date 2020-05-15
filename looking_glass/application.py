@@ -21,7 +21,7 @@ from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data
 
-BASE_UPLOAD_FOLDER = './user_files'
+BASE_UPLOAD_FOLDER = '/tmp/looking_glass_user_files'
 
 application = app # Needed by Elastic Beanstalk / WSGI
 
@@ -411,6 +411,8 @@ def handle_csrf_error(e):
 
 # TODO: Also add support for importing SiLK NetFlow data (can convert PCAP's using the rwp2yaf2silk tool
 
+
+# For running locally in debug mode
 if __name__ == '__main__':
     verbose = False
     parser = argparse.ArgumentParser(description='Development mode command line options')
@@ -422,9 +424,6 @@ if __name__ == '__main__':
         log = logging.getLogger('werkzeug')
         log.disabled = True
         app.logger.disabled = True
-
-    # TODO: Enable HTTPS (need to generate a SSL certificate during setup in order for this to actually work)
-    #app.run(ssl_context='adhoc', threaded=True)
 
     # host='0.0.0.0' enables connections using the local network interface
     app.run(host='0.0.0.0', threaded=True)

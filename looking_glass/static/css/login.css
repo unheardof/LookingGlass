@@ -1,88 +1,100 @@
-/* TODO: Fix layout on chrome and firefox */
 body {
     background-color: black;
+    width: 90%;
+    height: 90%;
 }
 
-div.centered-div {
+div.container {
     position: absolute;
-    margin: auto;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: fit-content;
-    height: fit-content;
-    text-align: justify;
-    line-height: 25px;
+    margin: 5px;
+    width: 90%;
+    height: 80%;
+    text-align: left;
+    line-height: 15px;
     background-color: black;
-    color: white;
-    padding: 10px;
-    font-size: 25px;
+    color: #03fc45;
+    padding: 5px;
+    font-size: 20px;
+    font-family: Courier;
 }
 
-#login-div {
-    left: 35%;
-    width: 400px;
-    height: auto;
-    position: relative;
-}
-
-h1 {
-    text-align: center;
-    font-size: 45px;
-    margin-bottom: 30px;
+p.form_text {
+    display: block;
+    left: 0;
+    width: 40px;
+    height: 20px;
+    margin: 0;
+    padding-right: 5px;
 }
 
 input {
     display: block;
+    left: 60px;
     height: 20px;
-    width: 200px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    margin-left: auto;
-    margin-right: auto;
+    width: 500px;
+    background-color: black;
+    color: #03fc45;
+    margin-left: 0;
+    margin-right: 0;
+    border: none;
+    font-size: 20px;
+    font-family: "Courier";
+}
+
+input[type=text] {
+    padding-left: 10px;
+}
+
+input[type=text]:focus {
+    background-color: lightgreen;
+    color: white;
+}
+
+input[type=password] {
+    padding-left: 10px;
+}
+
+input[type=password]:focus {
+    background-color: lightgreen;
+    color: white;
 }
 
 input[type=submit] {
     height: auto;
-    width: 200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    font-size: 18px;
-    border-radius: 12px;
-    boder: solid;
+    width: auto;
+    font-size: 20px;
+    font-family: Courier;
     cursor: pointer;
+    left: 0;
+    border-bottom: solid 1px;
+    margin-bottom: 5px;
 }
 
 input[type=submit]:hover {
     background: #bbb;
 }
 
-button {
-    width: 50px;
-    height: 50px;
-    padding-bottom: 5px;
-    border-radius: 50%;
-    font-size: 35px;
-    position: absolute;
-    top: 25%;
-    bottom: 25%;
-    right: 0px;
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: white;
+    opacity: 1; /* Firefox */
+    font-family: Courier;
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: white;
+    font-family: Courier;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+    color: white;
+    font-family: Courier;
 }
 
 table {
-    width: 300px;
-    margin: 0 auto;
-    padding-right: 50px;
+    width: 100%;
+    margin-bottom: 20px;
 }
 
 tr {
-    margin-left: auto;
-    margin-right: auto;
-    width: 200px;
-    line-height: 0;
+    width: 100%;
 }
