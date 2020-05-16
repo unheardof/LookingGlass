@@ -7,8 +7,8 @@ body {
 div.container {
     position: absolute;
     margin: 5px;
-    width: 90%;
-    height: 80%;
+    width: auto;
+    height: auto;
     text-align: left;
     line-height: 15px;
     background-color: black;
@@ -21,7 +21,7 @@ div.container {
 p.form_text {
     display: block;
     left: 0;
-    width: 40px;
+    width: 100px;
     height: 20px;
     margin: 0;
     padding-right: 5px;
