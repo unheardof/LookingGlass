@@ -1,3 +1,5 @@
+// TODO: Force user to choose a node type when adding/editing nodes
+
 var nodes = null;
 var edges = null;
 var network = null;
@@ -102,6 +104,9 @@ var options = {
 	    document.getElementById('operation').innerHTML = "Add Node";
 	    document.getElementById('node-ip').value = data.title;
 	    document.getElementById('node-hostname').value = data.hostname;
+	    // TODO: Make this required with reasonable default (i.e. generic host)
+	    //       And make sure to do the same thing for the edit not function
+	    //       Should really probably merge these two function blocks
 	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
@@ -173,6 +178,22 @@ function openControlPanel() {
 function closeControlPanel() {
     document.getElementById("controlPanel").style.display = "none";
     document.getElementById("openControlPanelSpan").style.display = "block";
+}
+
+function contextPanel() {
+    return document.getElementById('contextPanel');
+}
+
+function openContextPanel() {
+    contextPanel().style.display = "block";
+}
+
+function closeContextPanel() {
+    contextPanel().style.display = "none";
+}
+
+function setContextPanelContent(lines) {
+    contextPanel().innerHTML = lines.join('<br><br>');
 }
 
 function clearPopUp() {
@@ -323,7 +344,7 @@ function saveEdge(data) {
 }
 
 function removeNode(data) {
-    var popupDiv = document.getElementById('node-popup');
+    var popupDiv = contextPanel();
     popupDiv.style.display = 'none'; // Hide the pop-up if it's visible
     postGraphData("remove_node", data.nodes[0]);
 }
@@ -345,7 +366,7 @@ function create_network(container, data, options) {
 
     // Based on https://stackoverflow.com/questions/35906493/accessing-node-data-in-vis-js-click-handler
     network.on('click', function(properties) {
-	var popupDiv = document.getElementById('node-popup');
+	var popupDiv = contextPanel();
 
 	if('nodes' in properties && properties.nodes.length != 0) {
 	    var ids = properties.nodes;
@@ -360,13 +381,13 @@ function create_network(container, data, options) {
 			displayLines.push('<hr/>');
 		    }
 
-		    displayLines.push('IP: ' + elem['title']);
-		    displayLines.push('Hostname: ' + elem['hostname']);
+		    displayLines.push('<b>IP:</b> ' + elem['title']);
+		    displayLines.push('<b>Hostname:</b> ' + elem['hostname']);
 
 		    if('device_types' in elem) {
 			device_type_list = JSON.parse(elem['device_types']);
 			if(device_type_list.length != 0) {
-			    displayLines.push('<hr>Device Types:');
+			    displayLines.push('<hr><b>Device Types:</b>');
 			    for(var device in device_type_list) {
 				displayLines.push(device);
 			    }
@@ -378,7 +399,7 @@ function create_network(container, data, options) {
 
 			os_list = JSON.parse(os_list_str);
 			if(os_list.length != 0) {
-			    displayLines.push('<hr>OS Info:');
+			    displayLines.push('<hr><b>OS Info:</b>');
 			    for(var i in os_list) {
 				displayLines.push(os_list[i]);
 			    }
@@ -392,7 +413,7 @@ function create_network(container, data, options) {
 			for (var portNumber in portData) {
 			    var dataForPort = portData[portNumber];
 
-			    displayLines.push('<hr>Port Number: ' + portNumber);
+			    displayLines.push('<hr><b>Port Number:</b> ' + portNumber);
 
 			    for (var dataKey in dataForPort) {
 				if(dataForPort[dataKey].length != 0) {
@@ -406,13 +427,10 @@ function create_network(container, data, options) {
 		}
 	    );
 
-	    document.getElementById('node-popup').innerHTML = displayLines.join('<br>');
-
-	    popupDiv.style.left = properties.pointer.DOM.x + 'px';
-	    popupDiv.style.top = properties.pointer.DOM.y + 'px';
-	    popupDiv.style.display = 'block';
+	    setContextPanelContent(displayLines);
+	    openContextPanel();
 	} else {
-	    popupDiv.style.display = 'none'; // Hide the pop-up if it's visible
+	    closeContextPanel();
 	}
     });
 
@@ -432,8 +450,7 @@ function refreshGraph(forceRedraw = false) {
 
 	    if (forceRedraw || parseInt(graphData['current_version_number']) > currGraphVersion) {
 		// Hide the node data pop-up
-		var popupDiv = document.getElementById('node-popup');
-		popupDiv.style.display = 'none';
+		closeContextPanel();
 
 		currGraphVersion = parseInt(graphData['current_version_number']);
 
@@ -529,6 +546,11 @@ function objectToArray(obj) {
 function init() {
     draw();
     refreshGraph(); // Do an initial load of the current graph data
+
+    var currentTab = document.getElementById('workspace-tabs').children[0];
+    var currentTabButton = currentTab.children[0];
+    currentTabButton.style.backgroundColor = '#03fc45';
+    currentTabButton.style.color = 'black';
 }
 
 function logout() {
@@ -623,6 +645,22 @@ function refreshWorkspaceTabs() {
 
 function loadWorkspace(workspaceId) {
     document.querySelector('meta[name="workspace-id"]').setAttribute("content", workspaceId);
+    var workspaceTabsDiv = document.getElementById('workspace-tabs');
+    var tabs = workspaceTabsDiv.children;
+
+    for (var i = 0; i < tabs.length; i++) {
+	var tabWorkspaceId = getWorkspaceIdForTab(tabs[i]);
+	var tabButton = tabs[i].children[0];
+
+	if (tabWorkspaceId == workspaceId) {
+	    tabButton.style.backgroundColor = '#03fc45';
+	    tabButton.style.color = 'black';
+	} else {
+	    tabButton.style.backgroundColor = 'black';
+	    tabButton.style.color = '#03fc45';
+	}
+    }
+    
     refreshGraph(true);
 }
 

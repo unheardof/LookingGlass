@@ -19,8 +19,6 @@
   </head>
 
   <body onload="init();">
-    <div id = "node-popup" width="auto"></div>
-
     <div id="network-popUp" width="auto">
       <span id="operation">node</span> <br>
       <table style="margin:auto;">
@@ -50,8 +48,6 @@
 
     <div id="master-div">
       <div id="mynetwork" onclick="closeControlPanel()"></div>
-
-      <!-- TODO: Add support for auto-updating the view when a workspace gets shared -->
       <div id="workspace-tabs">
 	{% for workspace in session['workspaces'] %}
 	<!-- Enclosing in span to make it easier to dynamically add new buttons -->
@@ -73,7 +69,7 @@
 	<input type="file" id="netflowFileSelector" style="display:none" onchange="uploadNetflowFile(this.files)" />
 
 	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
-	<h1>Hi {{ current_user.get_username() }}</h1>
+	<h2>Hi {{ current_user.get_username() }}</h2>
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="createWorkspace" onclick="createWorkspace()">Create New Workspace</a><br><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="removeWorkspace" onclick="removeWorkspace()">Remove Workspace</a><br><br>
@@ -87,6 +83,8 @@
 	<hr><br>
 	<a hfef="javascript:void(0)" class="controlButton" id="logoutControl" onclick="logout()">Logout</a>
       </div>
+
+      <div id="contextPanel"></div>
     </div>
   </body>
 </html>

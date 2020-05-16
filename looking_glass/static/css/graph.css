@@ -1,22 +1,49 @@
 * {
     margin: 0;
 }
-html, body {
+html {
+    width: 100%;
+    height: 100%;
+}
+body {
     color: #d3d3d3;
     font: 12pt arial;
     background-color: #000000;
     height: 100%;
+    width: 100%;
 }
 #controlPanel {
     display: none;
-    background-color: #666666;
-    height: 100%;
+    border-right: 1.5px solid #cccccc;
+    color: #03fc45;
+    height: calc(100% - 20px - 25px); /* 20px for top and bottom padding and 25px for the workspace tabs*/
+    background-color: black;
     width: 225px;
     position: absolute;
     left: 0;
     top: 0;
     z-index: 299;
-    padding: 35px 15px 25px 15px;
+    padding-left: 5px;
+    padding-right: 0px;
+    padding-top: 15px;
+    padding-bottom: 5px;
+    font-family: "Courier";
+    font-size: 15px;
+}
+#contextPanel {
+    display: none;
+    border-left: 1.5px solid #cccccc;
+    color: #03fc45;
+    background-color: black;
+    height: calc(100% - 20px - 25px); /* 20px for top and bottom padding and 25px for the workspace tabs*/
+    width: 275px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 299;
+    padding: 10px;
+    font-family: "Courier";
+    font-size: 16px;
 }
 .closeButton {
     position: absolute;
@@ -25,7 +52,7 @@ html, body {
     right: 10px;
 }
 .controlButton {
-    font: bold 18px verdana;
+    font: 16px Courier;
     display: block;
     position: absolute;
 } 
@@ -40,16 +67,17 @@ html, body {
     height: 100%;
     width: 100%;
     padding: 0px;
-    maring: 0px;
+    margin: 0px;
 }
 #mynetwork {
     position:relative;
-    height: 96%;
+    height: calc(100% - 25px); /* 25px for the workspace tabs*/
     margin: 0 auto;
-    background-color: #000000;
+    background-color: black;
+    border-bottom: 1.5px solid #cccccc;
 }
 #workspace-tabs {
-    height: 25px;
+    height: 20px;
     width: 100%;
     background-color: #000000;
     padding: 0px;
@@ -57,13 +85,16 @@ html, body {
     float: bottom;
 }
 .tab-buttons {
-    background-color: #f1f1f1;
+    background-color: black;
+    border: 1px solid #cccccc;
+    border-top: none;
     float: left;
-    border: d3d3d3;
-    height: 25px;
-    font: 20px arial;
+    height: 20px;
+    font: 16px Courier;
     position: relative;
     bottom: 0px;
+    color: #03fc45;
+    padding: 2px;
 }
 table.legend_table {
     font-size: 11px;

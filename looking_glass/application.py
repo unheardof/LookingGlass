@@ -21,6 +21,8 @@ from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data
 
+# TODO: Use npm or something similar to manage dependency on vis-js
+
 BASE_UPLOAD_FOLDER = '/tmp/looking_glass_user_files'
 
 application = app # Needed by Elastic Beanstalk / WSGI
