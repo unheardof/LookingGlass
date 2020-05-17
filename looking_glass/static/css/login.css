@@ -71,7 +71,9 @@ input[type=submit] {
 }
 
 input[type=submit]:hover {
-    background: #bbb;
+    background-color: lightgreen;
+    color: white;
+    /* background: #bbb; */
 }
 
 ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */

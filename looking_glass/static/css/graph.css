@@ -55,7 +55,11 @@ body {
     font: 16px Courier;
     display: block;
     position: absolute;
-} 
+}
+a.controlButton:hover {
+    background-color: lightgreen;
+    color: white;
+}
 #openControlPanelSpan {
     position: absolute;
     left: 0px;
