@@ -1,5 +1,3 @@
-// TODO: Force user to choose a node type when adding/editing nodes
-
 var nodes = null;
 var edges = null;
 var network = null;
@@ -34,6 +32,10 @@ var options = {
 	hierarchical: {
 	    enabled: false
 	}
+    },
+    nodes: {
+	color: '#03fc45',
+	font: '14px courier #03fc45',
     },
     edges: {
 	smooth: {
@@ -104,10 +106,6 @@ var options = {
 	    document.getElementById('operation').innerHTML = "Add Node";
 	    document.getElementById('node-ip').value = data.title;
 	    document.getElementById('node-hostname').value = data.hostname;
-	    // TODO: Make this required with reasonable default (i.e. generic host)
-	    //       And make sure to do the same thing for the edit not function
-	    //       Should really probably merge these two function blocks
-	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
 	    document.getElementById('network-popUp').style.display = 'block';
@@ -480,12 +478,10 @@ function getNodeData(data) {
 	function(elem, index, array) {
 	    elem.title = elem.ip;
 
-	    if (elem.ip == null && elem.hostname == null) {
+	    if ((elem.ip == null || elem.ip == 'undefined') && (elem.hostname == null || elem.hostname == 'undefined')) {
 		elem.label = '';
-	    } else if (elem.hostname == null) {
+	    } else if (elem.hostname == null || elem.hostname == 'undefined') {
 		elem.label = elem.ip;
-	    } else if (elem.ip != null && elem.ip != elem.hostname) {
-		elem.label = elem.ip + "\n" + elem.hostname;
 	    } else {
 		elem.label = elem.hostname;
 	    }

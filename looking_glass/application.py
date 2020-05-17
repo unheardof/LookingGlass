@@ -62,7 +62,7 @@ class RegistrationForm(FlaskForm):
 # Static helper functions
 
 def defaultWorkspaceName():
-    return current_user.get_username() + "'s workspace"
+    return current_user.get_username() + ": default"
 
 def pcap_filename(username):
     # Use timestamp to keep a record of when the PCAP was uploaded, but add a UUID in case the same user submits
@@ -158,7 +158,7 @@ def register():
 @app.route('/create_workspace', methods=['POST'])
 @login_required
 def create_workspace():
-    workspace_name = request.json['workspace_name']
+    workspace_name = request.headers.get('user_id') + ': ' + request.json['workspace_name']
     success = data_graph.create_workspace(request.headers.get('user_id'), workspace_name)
 
     if success:
