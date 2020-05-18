@@ -1,0 +1,139 @@
+###
+### Install and configure Apache web server
+###
+### Note: these instructions are for Apache2 running on Ubuntu 18.04
+###
+
+# Update local package index
+sudo apt update
+
+# Install apache2 package
+sudo apt install apache2
+
+# Allow HTTP traffic for the Apache webserver to pass through the host firewall
+sudo ufw allow 'Apache'
+
+# Enable firewall
+sudo ufw enable
+
+# Confirm firewall is active and Apache firewall rule was applied (should see two; one for regular Apache and one for IPv6)
+# Note: you may also want to add a rule to allow SSH traffic (sudo ufw allow ssh)
+sudo ufw status
+
+# Check web server status
+sudo systemctl status apache2
+
+# Get server IP address
+ifconfig | grep inet
+
+# Confirm landing page is shown when you navigate to that IP on your web browser
+curl http://<IP address> # or use a browser
+
+# Install mod_wsgi
+sudo apt-get install libapache2-mod-wsgi-py3
+
+# Enable mod_wsgi
+
+sudo a2enmod wsgi
+
+--------------------------------------------------------------------------------
+
+###
+### Install and configure Looking Glass
+###
+
+# Install Looking Glass
+pip3 install looking-glass
+
+# Find install location
+python3 -c "import looking_glass as _; print(_.__file__)"
+
+# Navigate to the package directory
+cd <looking_glass directory location>
+
+# Install required packages for all users
+sudo pip3 install -r requirements.txt 
+
+# Create app content directory
+sudo mkdir /var/www/LookingGlass
+
+# Navigate to directory
+cd /var/www/LookingGlass
+
+# Create link to Looking Glass installation within /var/www/LookingGlass
+sudo ln -s <looking_glass directory location> looking_glass
+
+# Add the following lines to /etc/apache2/sites-available/LookingGlass.conf
+
+<VirtualHost *:80>
+    ServerName looking-glass.com
+    ServerAdmin admin@looking-glass.com
+    WSGIScriptAlias / /var/www/LookingGlass/looking_glass.wsgi
+    <Directory /var/www/LookingGlass/looking_glass>
+        Order allow,deny
+        Allow from all
+    </Directory>
+    Alias /static /var/www/LookingGlass/looking_glass/static
+    <Directory /var/www/LookingGlass/looking_glass/static>
+        Order allow,deny
+        Allow from all
+    </Directory>
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    LogLevel warn
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+
+# Enable virtual host for the Looking Glass app
+sudo a2ensite LookingGlass
+
+# Disable the default site
+sudo a2dissite 000-default.conf
+
+# Reload Apache configurations
+sudo systemctl reload apache2
+
+# Generate a random secret key; this is what Flask will use to sign the user cookies it generates
+
+python3 -c 'import os; print(os.urandom(16))'
+
+# Create the /var/www/LookingGlass/looking_glass.wsgi file and add the following lines:
+
+#!/usr/bin/env python3
+
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0,"/var/www/LookingGlass/")
+# TODO: May need to add PIP package install directory to the path instead
+#=> /home/ubuntu/.local/lib/python3.6/site-packages/looking_glass
+# TODO: Get rid of the symlink stuff
+
+from looking_glass import app as application
+application.secret_key = 'Add your secret key'
+
+# Make the /var/www/LookingGlass/looking_glass.wsgi file executable
+sudo chmod a+x /var/www/LookingGlass/looking_glass.wsgi
+
+# Restart Apache
+sudo service apache2 restart
+
+--------------------------------------------------------------------------------
+
+###
+### References
+###
+
+* How to install Apache web server -> https://www.digitalocean.com/community/tutorials/how-to-install-the-apache-web-server-on-ubuntu-18-04-quickstart
+
+* How to setup firewall -> https://www.digitalocean.com/community/tutorials/how-to-setup-a-firewall-with-ufw-on-an-ubuntu-and-debian-cloud-server
+
+* Deploy flask app on Apache web server
+-> https://www.digitalocean.com/community/tutorials/how-to-deploy-a-flask-application-on-an-ubuntu-vps
+-> http://flask.pocoo.org/docs/1.0/deploying/mod_wsgi/
+-> https://wiki.archlinux.org/index.php/Apache_HTTP_Server/mod_wsgi
+
+* How Flask secret keys are used and how to pick them -> http://flask.pocoo.org/docs/1.0/quickstart/#sessions
+
+* .wsgi script not loaded as module -> https://www.linuxquestions.org/questions/linux-server-73/apache-2-error-symbolic-link-not-allowed-706605/
+
+--------------------------------------------------------------------------------

@@ -91,6 +91,30 @@ var options = {
 		color: '#ffffff'
 	    }
 	},
+	router: {
+	    shape: 'image',
+	    image: 'static/images/router_icon.png',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	network_switch: {
+	    shape: 'image',
+	    image: 'static/images/switch_icon.png',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
+	nic: {
+	    shape: 'image',
+	    image: 'static/images/ethernet_port_icon.png',
+	    font: {
+		size: 15,
+		color: '#ffffff'
+	    }
+	},
 	other: {
 	    shape: 'image',
 	    image: 'static/images/generic-host.png',
