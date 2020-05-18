@@ -38,9 +38,12 @@ var options = {
 	font: '14px courier #03fc45',
     },
     edges: {
+	color: '#03fc45',
 	smooth: {
 	    enabled: false
-	}
+	},
+	width: 2,
+	hoverWidth: function (width) {return width+1;}
     },
     groups: {
 	ops_box: {
