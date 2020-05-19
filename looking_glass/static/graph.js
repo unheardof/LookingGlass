@@ -35,7 +35,16 @@ var options = {
     },
     nodes: {
 	color: '#03fc45',
-	font: '14px courier #03fc45',
+	font: {
+	    size: 14, //px
+	    face: 'courier',
+	    color: '#03fc45',
+	    multi: 'html',
+	    bold: true,
+	    background: 'black'
+	},
+	labelHighlightBold: true,
+	shape: 'image',
     },
     edges: {
 	color: '#03fc45',
@@ -47,84 +56,34 @@ var options = {
     },
     groups: {
 	ops_box: {
-	    shape: 'image',
 	    image: 'static/images/hacker-icon.ico',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	staging_server: {
-	    shape: 'image',
 	    image: 'static/images/staging-server-icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	redirect: {
-	    shape: 'image',
 	    image: 'static/images/redirector-icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	beacon: {
-	    shape: 'image',
 	    image: 'static/images/beacon-icon.ico',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	windows_host: {
-	    shape: 'image',
 	    image: 'static/images/windows-icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	linux_host: {
-	    shape: 'image',
 	    image: 'static/images/linux-icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	router: {
-	    shape: 'image',
 	    image: 'static/images/router_icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	network_switch: {
-	    shape: 'image',
 	    image: 'static/images/switch_icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	nic: {
-	    shape: 'image',
 	    image: 'static/images/ethernet_port_icon.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	},
 	other: {
-	    shape: 'image',
 	    image: 'static/images/generic-host.png',
-	    font: {
-		size: 15,
-		color: '#ffffff'
-	    }
 	}
     },
     manipulation: {
@@ -509,6 +468,8 @@ function getNodeData(data) {
 		elem.label = '';
 	    } else if (elem.hostname == null || elem.hostname == 'undefined') {
 		elem.label = elem.ip;
+	    } else if (elem.hostname != elem.ip) {
+		elem.label = elem.hostname + '\n' + elem.ip;
 	    } else {
 		elem.label = elem.hostname;
 	    }
