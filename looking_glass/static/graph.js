@@ -40,7 +40,6 @@ var options = {
 	    face: 'courier',
 	    color: '#03fc45',
 	    multi: 'html',
-	    bold: true,
 	    background: 'black'
 	},
 	labelHighlightBold: true,
@@ -316,11 +315,28 @@ function delete_view_specific_data_attrs(data) {
     return data;
 }
 
+function nodeExistsForIp(ip) {
+    nodes = network.body.nodes;
+    for (node_id in nodes) {
+        if(nodes[node_id].options.ip == ip) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function saveNode(data, callback) {
-    clearPopUp();
-    delete_view_specific_data_attrs(data);
-    postGraphData("upsert_node", data);
-    callback(data);
+    // TODO: Add support for creating multiple nodes with the same IP if the IP is a private IP in a different network
+    ip = document.getElementById('network-popUp').getElementsByTagName('td')[1].children[0].value;
+    if (ip != undefined && nodeExistsForIp(ip)) {
+        alert(`ERROR: Node already exists with IP of ${ip}`);
+    } else {
+        clearPopUp();
+        delete_view_specific_data_attrs(data);
+        postGraphData("upsert_node", data);
+        callback(data);
+    }
 }
 
 function saveEdge(data) {

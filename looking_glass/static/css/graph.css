@@ -44,6 +44,8 @@ body {
     padding: 10px;
     font-family: "Courier";
     font-size: 16px;
+    overflow-x: hidden;
+    overflow-y: auto; /* Enable vertical scrolling if content will not fit within the div */
 }
 .closeButton {
     position: absolute;
