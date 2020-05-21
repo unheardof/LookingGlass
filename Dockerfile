@@ -2,11 +2,10 @@
 FROM tiangolo/uwsgi-nginx-flask:python3.6
 ARG NGINX_CONF_FILE
 
-RUN apt-get update && \
-    apt-get -y install gcc && \
-    apt-get -y install openssl && \
+RUN apt-get update &&\
+    apt-get -y install gcc &&\
+    apt-get -y install openssl &&\
     apt-get -y install libssl-dev
-RUN pip install --upgrade pip
 
 ENV LISTEN_PORT 80
 ENV LISTEN_PORT 443
@@ -24,5 +23,5 @@ COPY ./requirements.txt /var/www/requirements.txt
 RUN echo "NGINX_CONF_FILE: $NGINX_CONF_FILE"
 COPY $NGINX_CONF_FILE /etc/nginx/conf.d/default.conf
 
-RUN pip install -r /var/www/requirements.txt
+RUN pip install --upgrade pip && pip install -r /var/www/requirements.txt
 

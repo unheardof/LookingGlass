@@ -329,7 +329,7 @@ function nodeExistsForIp(ip) {
 function saveNode(data, callback) {
     // TODO: Add support for creating multiple nodes with the same IP if the IP is a private IP in a different network
     ip = document.getElementById('network-popUp').getElementsByTagName('td')[1].children[0].value;
-    if (ip != undefined && nodeExistsForIp(ip)) {
+    if (ip != undefined && ip != 'undefined' && nodeExistsForIp(ip)) {
         alert(`ERROR: Node already exists with IP of ${ip}`);
     } else {
         clearPopUp();
