@@ -137,6 +137,13 @@ class DataGraph:
         session = self.create_session()
         return session.query(Workspace).filter_by(owning_user = username, default = True).first()
 
+    def changelog_row_for_update(self, session):
+        new_version_number = ChangeLog.curr_version_number(session) + 1
+        return ChangeLog(
+            version_number = new_version_number,
+            date_time = datetime.datetime.utcnow()
+        )
+    
     def current_graph_json(self, username, workspace_id):
         session = self.create_session()
 
@@ -196,15 +203,9 @@ class DataGraph:
             else:
                 additional_node_data[key] = node_dict[key]
 
-        current_version_number = ChangeLog.curr_version_number(session)
-        new_version_number = current_version_number + 1
-
-        new_changelog_row = ChangeLog(
-            version_number = new_version_number,
-            date_time = datetime.datetime.utcnow()
-        )
+        new_changelog_row = self.changelog_row_for_update(session)
         new_node = Node.from_dict(node_obj_dict, workspace_id)
-        new_node.version_number = new_version_number
+        new_node.version_number = new_changelog_row.version_number
 
         session.add(new_node)
         session.add(new_changelog_row)
@@ -220,35 +221,38 @@ class DataGraph:
 
         session.commit()
 
-    def add_edge(self, edge, username, workspace_id):
+    def upsert_edge(self, edge_data, username, workspace_id):
         session = self.create_session()
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
 
-        current_version_number = ChangeLog.curr_version_number(session)
+        from_node_id = edge_data['from']
+        to_node_id = edge_data['to']
 
-        from_node_id = edge['from']
+        # Lock involved nodes and ensure that they exist
         source_node = session.query(Node).filter_by(active = True, id = from_node_id, workspace_id = workspace_id).first()
+        destination_node = session.query(Node).filter_by(active = True, id = to_node_id, workspace_id = workspace_id).first()
 
-        if not source_node:
+        if not source_node or not destination_node:
             session.rollback()
-            raise "Unable to create edge; from node with ID of %s does not exist" % from_node_id
+            raise "Unable to create edge from node with ID of %s to node %s; at least one of these nodes does not exist" % (from_node_id, to_node_id)
 
-        new_version_number = current_version_number + 1
+        # Lock the existing edge record (in both directions)
+        if 'previous_source_node' in edge_data and 'previous_destination_node' in edge_data:
+            for e in session.query(Edge).filter_by(active = True, source_node_id = edge_data['previous_source_node'], destination_node_id = edge_data['previous_destination_node'], workspace_id = workspace_id).all():
+                e.active = False
+                session.add(e)
 
-        new_changelog_row = ChangeLog(
-            version_number = new_version_number,
-            date_time = datetime.datetime.utcnow()
-        )
+        new_changelog_row = self.changelog_row_for_update(session)
 
         new_edge = Edge(
-            source_node_id = edge['from'],
-            destination_node_id = edge['to'],
-            version_number = new_version_number,
+            source_node_id = from_node_id,
+            destination_node_id = to_node_id,
             workspace_id = workspace_id,
+            version_number = new_changelog_row.version_number,
             active = True
-            )
+        )
 
         session.add(new_edge)
         session.add(new_changelog_row)
@@ -260,13 +264,7 @@ class DataGraph:
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
 
-        current_version_number = ChangeLog.curr_version_number(session)
-
-        new_changelog_row = ChangeLog(
-            version_number = current_version_number + 1,
-            date_time = datetime.datetime.utcnow()
-        )
-
+        new_changelog_row = self.changelog_row_for_update(session)
         session.add(new_changelog_row)
         
         edges_from_node = session.query(Edge).filter_by(active = True, source_node_id = node_id, workspace_id = workspace_id).all()
@@ -287,14 +285,8 @@ class DataGraph:
 
         if not self.can_user_access_workspace(session, username, workspace_id):
             return None
-        
-        current_version_number = ChangeLog.curr_version_number(session)
 
-        new_changelog_row = ChangeLog(
-            version_number = current_version_number + 1,
-            date_time = datetime.datetime.utcnow()
-        )
-
+        new_changelog_row = self.changelog_row_for_update(session)
         session.add(new_changelog_row)
         
         edge = session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).first()

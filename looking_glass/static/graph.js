@@ -81,6 +81,9 @@ var options = {
 	nic: {
 	    image: 'static/images/ethernet_port_icon.png',
 	},
+	wan: {
+	    image: 'static/images/wan_icon.png',
+	},
 	other: {
 	    image: 'static/images/generic-host.png',
 	}
@@ -106,12 +109,32 @@ var options = {
 	    document.getElementById('cancelButton').onclick = cancelEdit.bind(this, callback);
 	    document.getElementById('network-popUp').style.display = 'block';
 	},
-
 	addEdge: function (data, callback) {
 	    // At present, edge labels are not used for anything
 	    // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
 	    data.label = '';
 
+	    if (data.from == data.to) {
+		var r = confirm("Do you want to connect the node to itself?");
+		if (r == true) {
+		    saveEdge(data);
+		    callback(data);
+		}
+	    }
+	    else {
+		saveEdge(data);
+		callback(data);
+	    }
+	},
+	editEdge: function (data, callback) {
+	    // At present, edge labels are not used for anything
+	    // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
+	    data.label = '';
+
+	    selected_edge = network.body.edges[data.id]
+	    data['previous_source_node'] = selected_edge['fromId']
+	    data['previous_destination_node'] = selected_edge['toId']
+	    
 	    if (data.from == data.to) {
 		var r = confirm("Do you want to connect the node to itself?");
 		if (r == true) {
@@ -340,7 +363,7 @@ function saveNode(data, callback) {
 }
 
 function saveEdge(data) {
-    postGraphData("add_edge", data);
+    postGraphData("upsert_edge", data);
 }
 
 function removeNode(data) {
@@ -349,8 +372,8 @@ function removeNode(data) {
     postGraphData("remove_node", data.nodes[0]);
 }
 
-function removeEdge(call_data) {
-    edge = network.body.edges[call_data.edges[0]]
+function removeEdge(data) {
+    edge = network.body.edges[data.edges[0]]
     postGraphData("remove_edge", { from: edge.fromId, to: edge.toId });
 }
 
@@ -484,7 +507,7 @@ function getNodeData(data) {
 		elem.label = '';
 	    } else if (elem.hostname == null || elem.hostname == 'undefined') {
 		elem.label = elem.ip;
-	    } else if (elem.hostname != elem.ip) {
+	    } else if (elem.hostname != elem.ip && elem.ip != null && elem.ip != 'undefined') {
 		elem.label = elem.hostname + '\n' + elem.ip;
 	    } else {
 		elem.label = elem.hostname;

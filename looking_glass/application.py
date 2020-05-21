@@ -243,10 +243,10 @@ def upsert_node():
     data_graph.upsert_node(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
-@app.route('/add_edge', methods=['POST'])
+@app.route('/upsert_edge', methods=['POST'])
 @login_required
-def add_edge():
-    data_graph.add_edge(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
+def upsert_edge():
+    data_graph.upsert_edge(request.json, request.headers.get('user_id'), request.headers.get('workspace_id'))
     return 'ok'
 
 @app.route('/remove_node', methods=['POST'])

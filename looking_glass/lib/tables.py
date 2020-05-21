@@ -107,8 +107,8 @@ class Node(Base):
 class Edge(Base):
     __tablename__ = 'edges'
 
-    source_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
-    destination_node_id = Column(Integer, ForeignKey("nodes.id"), primary_key = True)
+    source_node_id = Column(String, ForeignKey("nodes.id"), primary_key = True)
+    destination_node_id = Column(String, ForeignKey("nodes.id"), primary_key = True)
     version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
     active = Column(Boolean)
