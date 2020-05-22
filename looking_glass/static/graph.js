@@ -354,11 +354,36 @@ function nodeForIp(ip) {
     return null;
 }
 
+function isPrivateIp(ip) {
+    // Private IP Ranges:
+    // 10.0.0.0/8
+    // 172.16.0.0/12 (172.16.0.0-172.31.255.255)
+    // 192.168.0.0/16
+    
+    octets = ip.split('.')
+    if (octets[0] == '10') {
+	return true;
+    }
+
+    if (octets[0] == '172') {
+	second_octet = parseInt(octets[1]);
+	if (second_octet >= 16 && second_octet <= 31) {
+	    return true;
+	}
+    }
+
+    if (octets[0] == '192' && octets[1] == '168') {
+	return true;
+    }
+
+    return false;
+}
+
 function saveNode(data, callback) {
-    // TODO: Add support for creating multiple nodes with the same IP if the IP is a private IP in a different network
     ip = document.getElementById('network-popUp').getElementsByTagName('td')[1].children[0].value;
     node = nodeForIp(ip);
-    if (node != null && data.id != node.id) {
+    
+    if (!isPrivateIp(ip) && node != null && data.id != node.id) {
         alert(`ERROR: Node already exists with IP of ${ip}`);
     } else {
         clearPopUp();
