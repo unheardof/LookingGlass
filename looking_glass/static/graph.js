@@ -338,21 +338,27 @@ function delete_view_specific_data_attrs(data) {
     return data;
 }
 
-function nodeExistsForIp(ip) {
+function nodeForIp(ip) {
+    if (ip == undefined || ip == 'undefined') {
+	return null;
+    }
+    
     nodes = network.body.nodes;
     for (node_id in nodes) {
-        if(nodes[node_id].options.ip == ip) {
-            return true;
+	node = nodes[node_id]
+        if(node.options.ip == ip) {
+            return node;
         }
     }
 
-    return false;
+    return null;
 }
 
 function saveNode(data, callback) {
     // TODO: Add support for creating multiple nodes with the same IP if the IP is a private IP in a different network
     ip = document.getElementById('network-popUp').getElementsByTagName('td')[1].children[0].value;
-    if (ip != undefined && ip != 'undefined' && nodeExistsForIp(ip)) {
+    node = nodeForIp(ip);
+    if (node != null && data.id != node.id) {
         alert(`ERROR: Node already exists with IP of ${ip}`);
     } else {
         clearPopUp();
