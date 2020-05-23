@@ -111,7 +111,15 @@ class Edge(Base):
     destination_node_id = Column(String, ForeignKey("nodes.id"), primary_key = True)
     version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
     workspace_id = Column(Integer, ForeignKey("workspaces.id"), primary_key = True)
+    label = Column(String)
     active = Column(Boolean)
+
+    def serializable_dict(self):
+        d = self.__dict__
+        del d['_sa_instance_state']
+
+        return d
+
 
 def setup_tables(engine):
     # TODO: Implement support for performing database migration / schema change if needed

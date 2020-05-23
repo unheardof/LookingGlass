@@ -160,9 +160,9 @@ class DataGraph:
 
         for edge in session.query(Edge).filter_by(active = True, workspace_id = workspace_id).all():
             if 'connections' in nodes_by_id[edge.source_node_id]:
-                nodes_by_id[edge.source_node_id]['connections'].append(edge.destination_node_id)
+                nodes_by_id[edge.source_node_id]['connections'].append(edge.serializable_dict())
             else:
-                nodes_by_id[edge.source_node_id]['connections'] = [edge.destination_node_id]
+                nodes_by_id[edge.source_node_id]['connections'] = [edge.serializable_dict()]
 
         return {
             'current_version_number': current_version_number,
@@ -246,11 +246,16 @@ class DataGraph:
 
         new_changelog_row = self.changelog_row_for_update(session)
 
+        label = '';
+        if ('label' in edge_data):
+            label = edge_data['label']
+
         new_edge = Edge(
             source_node_id = from_node_id,
             destination_node_id = to_node_id,
             workspace_id = workspace_id,
             version_number = new_changelog_row.version_number,
+            label = label,
             active = True
         )
 

@@ -126,7 +126,7 @@ div.table_description {
 #operation {
     font-size:28px;
 }
-#network-popUp {
+#node-popUp {
     color: black;
     display:none;
     position:fixed;
@@ -142,20 +142,4 @@ div.table_description {
     border-color: #5394ed;
     padding:10px;
     text-align: center;
-}
-#node-popup {
-    position: absolute;
-    display: none;
-    color: black;
-    width: auto;
-    max-height: 200px;
-    background-color: #f9f9f9;
-    border-style:solid;
-    border-width:3px;
-    border-color: #5394ed;
-    padding:5px;
-    text-align: center;
-    z-index: 1;
-    text-align: left;
-    overflow: auto;
 }

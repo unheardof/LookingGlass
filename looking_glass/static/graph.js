@@ -47,6 +47,13 @@ var options = {
     },
     edges: {
 	color: '#03fc45',
+	font: {
+	    size: 14, //px
+	    face: 'courier',
+	    color: '#03fc45',
+	    background: 'black',
+	    strokeWidth: 0
+	},
 	smooth: {
 	    enabled: false
 	},
@@ -95,8 +102,8 @@ var options = {
 	    document.getElementById('node-ip').value = data.title;
 	    document.getElementById('node-hostname').value = data.hostname;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
-	    document.getElementById('cancelButton').onclick = clearPopUp.bind();
-	    document.getElementById('network-popUp').style.display = 'block';
+	    document.getElementById('cancelButton').onclick = clearNodePopUp.bind();
+	    document.getElementById('node-popUp').style.display = 'block';
 	},
 	editNode: function (data, callback) {
 	    // filling in the popup DOM elements
@@ -106,13 +113,11 @@ var options = {
 	    document.getElementById('node-type').value = data.group;
 	    document.getElementById('saveButton').onclick =  saveNode.bind(this, data, callback);
 
-	    document.getElementById('cancelButton').onclick = cancelEdit.bind(this, callback);
-	    document.getElementById('network-popUp').style.display = 'block';
+	    document.getElementById('cancelButton').onclick = cancelNodeEdit.bind(this, callback);
+	    document.getElementById('node-popUp').style.display = 'block';
 	},
 	addEdge: function (data, callback) {
-	    // At present, edge labels are not used for anything
-	    // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
-	    data.label = '';
+	    data.options = { label: '' };
 
 	    if (data.from == data.to) {
 		var r = confirm("Do you want to connect the node to itself?");
@@ -127,13 +132,9 @@ var options = {
 	    }
 	},
 	editEdge: function (data, callback) {
-	    // At present, edge labels are not used for anything
-	    // TODO: Add support for adding labels to edges -> https://stackoverflow.com/questions/37661543/vis-js-network-add-label-to-edge
-	    data.label = '';
-
-	    selected_edge = network.body.edges[data.id]
-	    data['previous_source_node'] = selected_edge['fromId']
-	    data['previous_destination_node'] = selected_edge['toId']
+	    selected_edge = network.body.edges[data.id];
+	    data['previous_source_node'] = selected_edge['fromId'];
+	    data['previous_destination_node'] = selected_edge['toId'];
 	    
 	    if (data.from == data.to) {
 		var r = confirm("Do you want to connect the node to itself?");
@@ -202,14 +203,18 @@ function setContextPanelContent(lines) {
     contextPanel().innerHTML = lines.join('<br><br>');
 }
 
-function clearPopUp() {
+function clearNodePopUp() {
     document.getElementById('saveButton').onclick = null;
     document.getElementById('cancelButton').onclick = null;
-    document.getElementById('network-popUp').style.display = 'none';
+    document.getElementById('node-popUp').style.display = 'none';
 }
 
-function cancelEdit(callback) {
-    clearPopUp();
+function cancelNodeEdit(callback) {
+    clearNodePopUp();
+    callback(null);
+}
+
+function cancelEdgeEdit(callback) {
     callback(null);
 }
 
@@ -257,7 +262,7 @@ function postJsonData(methodName, data) {
     postData(methodName, JSON.stringify(data, undefined, 2), "application/json");
 }
 
-function postGraphData(methodName, data) {
+function postNodeData(methodName, data) {
     data.ip = document.getElementById('node-ip').value;
     data.hostname = document.getElementById('node-hostname').value;
     data.group = document.getElementById('node-type').value;
@@ -380,32 +385,32 @@ function isPrivateIp(ip) {
 }
 
 function saveNode(data, callback) {
-    ip = document.getElementById('network-popUp').getElementsByTagName('td')[1].children[0].value;
+    ip = document.getElementById('node-popUp').getElementsByTagName('td')[1].children[0].value;
     node = nodeForIp(ip);
     
     if (!isPrivateIp(ip) && node != null && data.id != node.id) {
         alert(`ERROR: Node already exists with IP of ${ip}`);
     } else {
-        clearPopUp();
+        clearNodePopUp();
         delete_view_specific_data_attrs(data);
-        postGraphData("upsert_node", data);
+        postNodeData("upsert_node", data);
         callback(data);
     }
 }
 
 function saveEdge(data) {
-    postGraphData("upsert_edge", data);
+    postJsonData("upsert_edge", data);
 }
 
 function removeNode(data) {
-    var popupDiv = contextPanel();
-    popupDiv.style.display = 'none'; // Hide the pop-up if it's visible
-    postGraphData("remove_node", data.nodes[0]);
+    var contextDiv = contextPanel();
+    contextDiv.style.display = 'none'; // Hide the pop-up if it's visible
+    postNodeData("remove_node", data.nodes[0]);
 }
 
 function removeEdge(data) {
     edge = network.body.edges[data.edges[0]]
-    postGraphData("remove_edge", { from: edge.fromId, to: edge.toId });
+    postJsonData("remove_edge", { from: edge.fromId, to: edge.toId });
 }
 
 function objectToArray(obj) {
@@ -420,8 +425,6 @@ function create_network(container, data, options) {
 
     // Based on https://stackoverflow.com/questions/35906493/accessing-node-data-in-vis-js-click-handler
     network.on('click', function(properties) {
-	var popupDiv = contextPanel();
-
 	if('nodes' in properties && properties.nodes.length != 0) {
 	    var ids = properties.nodes;
 	    var clickedNodes = data.nodes.get(ids);
@@ -488,6 +491,31 @@ function create_network(container, data, options) {
 	}
     });
 
+    // Reference: https://visjs.github.io/vis-network/docs/network/index.html?keywords=selectEdge#Events
+    network.on("doubleClick", function(data) {
+	if (data.edges.length > 0) {
+	    selected_edge = null;
+	    edges = network.body.edges
+	    for (edge_id in edges) {
+		edge = edges[edge_id];
+		if (edge.selected) {
+		    selected_edge = edge;
+		}
+	    }
+
+	    if (selected_edge != null) {
+		label = prompt("Please enter edge label", selected_edge.label);
+		saveEdge({
+		    to: selected_edge.toId,
+		    from: selected_edge.fromId,
+		    label: label
+		});
+	    } else {
+		console.log('ERROR: Unable to find selected edge while handling double-click event');
+	    }
+	}
+    });
+    
     return network;
 }
 
@@ -567,16 +595,18 @@ function getEdgeData(data) {
     data.forEach(function(node) {
 	if(typeof node !== 'undefined' && typeof node.connections !== 'undefined') {
 	    // add the connection
-	    node.connections.forEach(function(connId, cIndex, conns) {
-		networkEdges.push({from: node.id, to: connId});
-		let cNode = getNodeById(data, connId);
+	    node.connections.forEach(function(edgeData, cIndex, conns) {
+		destinationId = edgeData.destination_node_id; 
+		
+		networkEdges.push({from: node.id, to: destinationId, label: edgeData.label});
+		let cNode = getNodeById(data, destinationId);
 
 		if(typeof cNode !== 'undefined' && typeof cNode.connections !== 'undefined') {
 		    var elementConnections = cNode.connections;
 
 		    // remove the connection from the other node to prevent duplicate connections
 		    var duplicateIndex = elementConnections.findIndex(function(connection) {
-			return connection == node.id; // double equals since id can be numeric or string
+			return connection.destinationId == node.id; // double equals since id can be numeric or string
 		    });
 
 		    if (duplicateIndex != -1) {
