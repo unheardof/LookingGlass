@@ -403,8 +403,7 @@ function saveEdge(data) {
 }
 
 function removeNode(data) {
-    var contextDiv = contextPanel();
-    contextDiv.style.display = 'none'; // Hide the pop-up if it's visible
+    closeContextPanel();
     postNodeData("remove_node", data.nodes[0]);
 }
 
@@ -438,13 +437,13 @@ function create_network(container, data, options) {
 			displayLines.push('<hr/>');
 		    }
 
-		    displayLines.push('<b>IP:</b> ' + elem['title']);
-		    displayLines.push('<b>Hostname:</b> ' + elem['hostname']);
+		    displayLines.push('<b><u>IP:</u></b> ' + elem['title']);
+		    displayLines.push('<b><u>Hostname:</u></b> ' + elem['hostname']);
 
 		    if('device_types' in elem) {
 			device_type_list = JSON.parse(elem['device_types']);
 			if(device_type_list.length != 0) {
-			    displayLines.push('<hr><b>Device Types:</b>');
+			    displayLines.push('<br><b><u>Device Types:</u></b>');
 			    for(var device in device_type_list) {
 				displayLines.push(device);
 			    }
@@ -456,7 +455,7 @@ function create_network(container, data, options) {
 
 			os_list = JSON.parse(os_list_str);
 			if(os_list.length != 0) {
-			    displayLines.push('<hr><b>OS Info:</b>');
+			    displayLines.push('<br><b><u>OS Info:</u></b>');
 			    for(var i in os_list) {
 				displayLines.push(os_list[i]);
 			    }
@@ -470,13 +469,35 @@ function create_network(container, data, options) {
 			for (var portNumber in portData) {
 			    var dataForPort = portData[portNumber];
 
-			    displayLines.push('<hr><b>Port Number:</b> ' + portNumber);
+			    displayLines.push('<br><b><u>Port Number:</u></b> ' + portNumber);
 
 			    for (var dataKey in dataForPort) {
 				if(dataForPort[dataKey].length != 0) {
 				    displayLines.push(dataKey + ': ' + dataForPort[dataKey]);
 				}
 			    }
+			}
+		    }
+
+		    var edgeLabels = new Set();
+		    var allEdges = network.body.edges;
+		    
+		    for (var edgeIndex in allEdges) {
+			edge = allEdges[edgeIndex];
+			if (edge['fromId'] == elem['id'] || edge['toId'] == elem['id']) {
+			    if ('options' in edge && 'label' in edge['options']) {
+				var label = edge['options']['label'];
+				if (label != undefined && label.replace(/^\s+|\s+$/g, '').length > 0) {
+				    edgeLabels.add(label);
+				}
+			    }
+			}
+		    }
+
+		    if(edgeLabels.size > 0) {
+			displayLines.push('<br><b><u>Connected edge labels:</u></b>');
+			for (const label of edgeLabels) {
+			    displayLines.push(label);
 			}
 		    }
 
@@ -504,12 +525,14 @@ function create_network(container, data, options) {
 	    }
 
 	    if (selected_edge != null) {
-		label = prompt("Please enter edge label", selected_edge.label);
-		saveEdge({
-		    to: selected_edge.toId,
-		    from: selected_edge.fromId,
-		    label: label
-		});
+		label = prompt("Please enter edge label", selected_edge.options.label);
+		if (label != null) {
+		    saveEdge({
+			to: selected_edge.toId,
+			from: selected_edge.fromId,
+			label: label
+		    });
+		}
 	    } else {
 		console.log('ERROR: Unable to find selected edge while handling double-click event');
 	    }

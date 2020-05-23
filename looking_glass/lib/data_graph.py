@@ -238,7 +238,11 @@ class DataGraph:
             session.rollback()
             raise "Unable to create edge from node with ID of %s to node %s; at least one of these nodes does not exist" % (from_node_id, to_node_id)
 
-        # Lock the existing edge record (in both directions)
+        # Lock the existing edge records
+        for e in session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).all():
+            e.active = False
+            session.add(e)
+        
         if 'previous_source_node' in edge_data and 'previous_destination_node' in edge_data:
             for e in session.query(Edge).filter_by(active = True, source_node_id = edge_data['previous_source_node'], destination_node_id = edge_data['previous_destination_node'], workspace_id = workspace_id).all():
                 e.active = False
