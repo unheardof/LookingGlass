@@ -298,7 +298,9 @@ function openArpFileSelector() {
 }
 
 function openPcapFileSelector() {
-    pcapFileSelector.click();
+    // TODO: Get PCAP uploads working
+    //pcapFileSelector.click();
+    alert('This feature is not fully supported at this time; please run the extract_uniq_flows.sh script on the PCAP and then upload the result net-flow file using the Upload Net Flow File option');
 }
 
 function openNetflowFileSelector() {
@@ -314,9 +316,8 @@ function uploadArpFile(files) {
 }
 
 function uploadPcapFile(files) {
-    // TODO: Get this fixed
-    alert('This feature is not fully supported at this time; please run the extract_uniq_flows.sh script on the PCAP and then upload the result net-flow file using the Upload Net Flow File option');
-    postBinaryFile('upload_pcap_data', files[0]);
+    // TODO: Get this fixed 
+    //postBinaryFile('upload_pcap_data', files[0]);
 }
 
 function uploadNetflowFile(files) {
@@ -549,7 +550,6 @@ function refreshGraph(forceRedraw = false) {
 
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
-	// TODO: Add error handling
 	if (this.readyState == 4 && keepGraphUpToDate) {
 	    var graphData = JSON.parse(xmlHttp.responseText);
 
@@ -570,6 +570,8 @@ function refreshGraph(forceRedraw = false) {
 
 	    setTimeout(refreshGraph, 100);
 	    refreshWorkspaceTabs();
+	} else {
+	    console.warn('Failed to refresh graph');
 	}
     };
 
@@ -663,7 +665,9 @@ function init() {
 function logout() {
     // No additional data needs to be send with the logout request
     keepGraphUpToDate = false;
-    postJsonData('logout', ''); // TODO: Change to GET if not auth data needs to be explicitly sent
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET", "logout", true ); // true for asynchronous request
+    xmlHttp.send();
     window.location.href = '/login';
 }
 
@@ -701,7 +705,6 @@ function refreshWorkspaceTabs() {
 
     xmlHttp.onreadystatechange = function() {
 	if (this.readyState == 4) {
-	    // TODO: Add error handling
 	    var workspaces = JSON.parse(xmlHttp.responseText);
 
 	    var workspaceTabsDiv = document.getElementById('workspace-tabs');
@@ -743,6 +746,8 @@ function refreshWorkspaceTabs() {
 		    workspaceTabsDiv.appendChild(span);
 		}
 	    }
+	} else {
+	    console.warn('Failed to refresh workspace tabs');
 	}
     };
 
