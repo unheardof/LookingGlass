@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, request, render_template, send_from_directory, url_for, redirect, session, Response
+from flask import Flask, request, render_template, send_from_directory, url_for, redirect, session, Response, jsonify
 from flask_login import current_user, login_required, LoginManager, login_user, logout_user
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect, CSRFError
@@ -19,10 +19,10 @@ from looking_glass import app
 from NmapQueryTool.lib.scan_data import ScanData
 from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
-from looking_glass.lib.arp import parse_arp_data
+from looking_glass.lib.arp import parse_arp_data, ArpDataParsingException
 
-# TODO: Use npm or something similar to manage dependency on vis-js
-
+# TODO: Use tmp files instead
+# See https://bandit.readthedocs.io/en/latest/plugins/b108_hardcoded_tmp_directory.html
 BASE_UPLOAD_FOLDER = '/tmp/looking_glass_user_files'
 
 application = app # Needed by Elastic Beanstalk / WSGI
@@ -314,6 +314,13 @@ def upload_nmap_data():
 
     return 'ok'
 
+# Reference: https://flask.palletsprojects.com/en/1.1.x/patterns/apierrors/
+@app.errorhandler(ArpDataParsingException)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
 @app.route('/upload_arp_data', methods=['POST'])
 @login_required
 def upload_arp_data():
@@ -321,6 +328,7 @@ def upload_arp_data():
     session['workspace_id'] = request.headers.get('workspace_id')
     arp_records = parse_arp_data(request.json)
 
+    # TODO: Figure how to identify switch in ARP records and use that to connect all records
     for arp_record in arp_records:
         node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
 

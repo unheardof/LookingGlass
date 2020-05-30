@@ -245,8 +245,15 @@ function postData(methodName, data = {}, contentType = "application/json") {
 		refreshGraph();
 	    } else {
 		if (xhttp.responseText) {
-		    alert(xhttp.responseText);
-		    console.error(xhttp.responseText);
+                    error_details = JSON.parse(xhttp.responseText)
+
+                    if ('message' in error_details) {
+                        alert(error_details.message);
+		        console.error(error_details.message);
+                    } else {
+		        alert(xhttp.responseText);
+		        console.error(xhttp.responseText);
+                    }
 		} else {
 		    alert('Failed to execute ' + methodName);
 		    console.error('Failed to execute ' + methodName);

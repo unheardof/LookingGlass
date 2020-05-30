@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Navigate to the root project directory
+cd $(dirname "${BASH_SOURCE[0]}")
+cd ..
+
 if pip list | grep -E '^virtualenv .*$' > /dev/null 2> /dev/null; then
      echo 'virtualenv is installed; continuing'
 else
@@ -7,9 +11,7 @@ else
     pip install virtualenv
 fi
 
-cd $(dirname "${BASH_SOURCE[0]}")
-
-if ls | grep -E '^venv$' > /dev/null 2> /dev/null; then
+if [ -d ./venv ]; then
     echo 'venv has already been created; continuing'
 else
     echo 'venv directory does not exist; creating now'
