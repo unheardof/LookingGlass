@@ -12,6 +12,8 @@ import json
 import logging
 import os
 import re
+import shutil
+import tempfile
 import threading
 import uuid
 
@@ -21,9 +23,7 @@ from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data, ArpDataParsingException
 
-# TODO: Use tmp files instead
-# See https://bandit.readthedocs.io/en/latest/plugins/b108_hardcoded_tmp_directory.html
-BASE_UPLOAD_FOLDER = '/tmp/looking_glass_user_files'
+TMP_UPLOAD_DIR = tempfile.mkdtemp()
 
 application = app # Needed by Elastic Beanstalk / WSGI
 
@@ -84,6 +84,7 @@ def load_user(username):
 @app.teardown_request
 def remove_session(ex=None):
     data_graph.close_session()
+    shutil.rmtree(TMP_UPLOAD_DIR)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -354,7 +355,8 @@ def upload_pcap_data():
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
 
-    directory_path = os.path.join(BASE_UPLOAD_FOLDER, username, 'pcaps')
+    # TODO: Enforce max size limit on files (also add check on client side)
+    directory_path = os.path.join(TMP_UPLOAD_DIR, username, 'pcaps')
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
