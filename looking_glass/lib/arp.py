@@ -4,6 +4,8 @@ import re
 import sys
 from io import StringIO
 
+from .internal_error import InternalError
+
 ARP_FIELD_NAMES = ['Address', 'HWtype', 'HWaddress', 'Flags', 'Mask', 'Iface']
 ARP_DASH_A_FIELD_COUNT = 7
 
@@ -29,13 +31,13 @@ class ArpData:
         
     def as_dict(self):
         d = {}
-        d['ip'] = self.address
+        d['Address'] = self.address
         d['hostname'] = self.hostname
-        d['hardware type'] = self.hw_type
-        d['MAC address'] = self.hw_address
-        d['ARP Flags'] = self.flags
-        d['ARP Mask'] = self.mask
-        d['network interface'] = self.interface
+        d['HWtype'] = self.hw_type
+        d['HWaddress'] = self.hw_address
+        d['Flags'] = self.flags
+        d['Mask'] = self.mask
+        d['Iface'] = self.interface
 
         return d
         
@@ -50,16 +52,9 @@ class ArpData:
             interface = record_data['Iface']
         )
 
-# Reference: https://flask.palletsprojects.com/en/1.1.x/patterns/apierrors/
-class ArpDataParsingException(Exception):
-    status_code = 500
-
-    def __init__(self, message):
-        Exception.__init__(self)
-        self.message = message
-
-    def to_dict(self):
-        return { 'message': self.message }
+###
+### "Static" utility functions
+###
     
 def non_empty_rows(block_str):
     return [ r.strip() for r in block_str.split("\n") if r.strip() != '' ]
@@ -205,13 +200,13 @@ def parse_arp_data(arp_data_string):
         return parse_arp_dash_a_data(arp_data_string)
     else:
         print("Unable to parse ARP data string:\n%s" % arp_data_string)
-        raise ArpDataParsingException("Failed to parse ARP data")
+        raise InternalError("Failed to parse ARP data")
 
 def parse_arp_file(arp_file):
     if not os.path.exists(arp_file):
         # TODO: Change to logging (and all other print statements
         print("File %s does not exist" % arp_file)
-        raise ArpDataParsingException("Internal error occurred while attempting for parse the provided ARP data file")
+        raise InternalError("Internal error occurred while attempting for parse the provided ARP data file")
 
     with open(arp_file, 'r') as f:
         return parse_arp_data(f.read())

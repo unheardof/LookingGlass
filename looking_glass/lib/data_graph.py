@@ -6,7 +6,8 @@ import os.path
 import sys
 import datetime
 
-from .tables import ChangeLog, Node, AdditionalNodeData, Edge, User, Workspace, AuthorizedWorkspaceUser, setup_tables
+from .internal_error import InternalError
+from .tables import ChangeLog, Node, AdditionalNodeData, NetworkInterface, Edge, User, Workspace, AuthorizedWorkspaceUser, setup_tables
 
 class DataGraph:
 
@@ -36,11 +37,15 @@ class DataGraph:
         session.commit()
 
     def node_as_dict_with_additional_data(self, session, node):
-        additional_node_data_list = session.query(AdditionalNodeData).filter_by(node_id = node.id).all()
         node_data = node.serializable_dict()
+        additional_node_data_list = session.query(AdditionalNodeData).filter_by(node_id = node.id).all()
+        node_network_interfaces = session.query(NetworkInterface).filter_by(node_id = node.id).all()
 
         for additional_node_data in additional_node_data_list:
             node_data[additional_node_data.data_key] = additional_node_data.data_value
+
+        if len(node_network_interfaces) > 0:
+            node_data['network_interfaces'] = [ i.as_dict() for i in node_network_interfaces ]            
 
         return node_data
 
@@ -236,7 +241,7 @@ class DataGraph:
 
         if not source_node or not destination_node:
             session.rollback()
-            raise "Unable to create edge from node with ID of %s to node %s; at least one of these nodes does not exist" % (from_node_id, to_node_id)
+            raise InternalError("Unable to create edge from node with ID of %s to node %s; at least one of these nodes does not exist" % (from_node_id, to_node_id))
 
         # Lock the existing edge records
         for e in session.query(Edge).filter_by(active = True, source_node_id = from_node_id, destination_node_id = to_node_id, workspace_id = workspace_id).all():
@@ -267,6 +272,62 @@ class DataGraph:
         session.add(new_changelog_row)
         session.commit()
 
+    def upsert_network_interface(self, arp_record, node_id, username, workspace_id):
+        session = self.create_session()
+
+        if not self.can_user_access_workspace(session, username, workspace_id):
+            session.rollback()
+            return None
+
+        new_changelog_row = self.changelog_row_for_update(session)
+        session.add(new_changelog_row)
+
+        nodes = session.query(Node).filter_by(id = node_id, workspace_id = workspace_id, active = True).all()
+
+        if len(nodes) != 1:
+            session.rollback()
+            raise InternalError('Expected to find exactly one active node with an ID of %s in workspace %s, but found %d' % (node_id, workspace_id, len(nodes)))
+
+        node = nodes[0]
+        if arp_record.mask is not None and node.subnet_mask != arp_record.mask:
+            node.subnet_mask = arp_record.mask
+            session.add(node)
+        
+        existing_interfaces = session.query(NetworkInterface).filter_by(node_id = node_id, workspace_id = workspace_id, mac_addr = arp_record.hw_address).all()
+        
+        if existing_interfaces is None or len(existing_interfaces) == 0:
+            new_interface = NetworkInterface(
+                node_id = node_id,
+                workspace_id = workspace_id,
+                name = arp_record.interface,
+                mac_addr = arp_record.hw_address,
+                hw_type = arp_record.hw_type,
+                arp_flags = arp_record.flags
+            )
+            
+            session.add(new_interface)
+            
+        elif len(existing_interfaces) > 1:
+            raise InternalError("Expected at most one existing network interface entry for node %s in workspace %s with MAC address %s, but found %d" % (node_id, workspace_id, arp_record.hw_address, len(existing_interfaces)))
+        else:
+            existing_interface = existing_interfaces[0]
+            
+            if arp_record.interface is not None:
+                existing_interface.name = arp_record.interface
+                
+            if arp_record.hw_address is not None:
+                existing_interface.mac_addr = arp_record.hw_address
+                    
+            if arp_record.hw_type is not None:
+                existing_interface.hw_type = arp_record.hw_type
+
+            if arp_record.flags is not None:
+                existing_interface.flags = arp_record.flags
+
+            session.add(existing_interface)
+
+        session.commit()
+        
     def remove_node(self, node_id, username, workspace_id):
         session = self.create_session()
 

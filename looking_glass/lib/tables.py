@@ -63,11 +63,30 @@ class ChangeLog(Base):
 class AdditionalNodeData(Base):
     __tablename__ = 'additional_node_data'
 
+    # TODO: Add workspace ID to avoid node ID collisions across workspaces
     id = Column(Integer, primary_key = True)
     node_id = Column(String, ForeignKey("nodes.id"))
     data_key = Column(String)
     data_value = Column(String)
 
+class NetworkInterface(Base):
+    __tablename__ = 'network_interfaces'
+
+    node_id = Column(String, ForeignKey("nodes.id"), primary_key = True)
+    workspace_id = Column(String, ForeignKey("workspaces.id"), primary_key = True)
+    mac_addr = Column(String, primary_key = True)
+    name = Column(String)
+    hw_type = Column(String)
+    arp_flags = Column(String)
+
+    def as_dict(self):
+        return {
+            'name': self.name,
+            'mac_addr': self.mac_addr,
+            'hardware_type': self.hw_type,
+            'arp_flags': self.arp_flags
+        }
+    
 class Node(Base):
     __tablename__ = 'nodes'
 
@@ -79,6 +98,7 @@ class Node(Base):
     version_number = Column(Integer, ForeignKey("change_log.version_number"), primary_key = True)
     hostname = Column(String)
     ip = Column(String)
+    subnet_mask = Column(String) # TODO: Integrate
     x_coordinate = Column(Float)
     y_coordinate = Column(Float)
     group = Column(String, default = 'other')

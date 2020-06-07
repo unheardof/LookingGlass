@@ -1,3 +1,4 @@
+const VALUE_SET_PATTERN = /\{(('.*'),?)+}/;
 var nodes = null;
 var edges = null;
 var network = null;
@@ -200,7 +201,7 @@ function closeContextPanel() {
 }
 
 function setContextPanelContent(lines) {
-    contextPanel().innerHTML = lines.join('<br><br>');
+    contextPanel().innerHTML = lines.join('<br>');
 }
 
 function clearNodePopUp() {
@@ -294,6 +295,14 @@ function postBinaryFile(methodName, fileName) {
     };
 
     reader.readAsArrayBuffer(fileName);
+}
+
+function setStringToList(str) {
+    // Reference: https://stackoverflow.com/questions/23136691/replace-last-occurrence-word-in-javascript/23137090
+    var lastClosingBraceIndex = str.lastIndexOf('}');
+    str = str.slice(0, lastClosingBraceIndex) + str.slice(lastClosingBraceIndex).replace('}', '');
+    str = str.replace('{', '').replace(/'/g, "");
+    return str.split(',');
 }
 
 function openNmapFileSelector() {
@@ -427,6 +436,36 @@ function objectToArray(obj) {
     });
 }
 
+function formatIfacesForDisplay(networkInterfaces) {
+    displayLines = [];
+    
+    for(var i = 0; i < networkInterfaces.length; i++) {
+        iface = networkInterfaces[i];
+
+        if('name' in iface) {
+            displayLines.push('<b>Interface ' + (i + 1) + ' (' + iface['name'] +')</b>');
+        } else {
+            displayLines.push('<b>Interface ' + (i + 1) + '</b>');
+        }
+        
+        if('mac_addr' in iface) {
+            displayLines.push('MAC Address: ' + iface['mac_addr']);
+        }
+
+        if('hardware_type' in iface) {
+            displayLines.push('Type: ' + iface['hardware_type']);
+        }
+
+        if('arp_flags' in iface) {
+            displayLines.push('ARP Flags: ' + iface['arp_flags']);
+        }
+
+        displayLines.push('');
+    }
+
+    return displayLines;
+}
+
 function create_network(container, data, options) {
     network = new vis.Network(container, data, options);
 
@@ -445,8 +484,23 @@ function create_network(container, data, options) {
 			displayLines.push('<hr/>');
 		    }
 
-		    displayLines.push('<b><u>IP:</u></b> ' + elem['title']);
-		    displayLines.push('<b><u>Hostname:</u></b> ' + elem['hostname']);
+                    if('title' in elem) {
+		        displayLines.push('<b><u>IP:</u></b> ' + elem['title']);
+                    } else {
+                        displayLines.push('<b><u>IP:</u></b> ' + 'UNKNOWN');
+                    }
+
+                    if('hostname' in elem) {
+		        displayLines.push('<b><u>Hostname:</u></b> ' + elem['hostname']);
+                    } else {
+                        displayLines.push('<b><u>Hostname:</u></b> ' + 'UNKNOWN');
+                    }
+
+                    displayLines.push('');
+
+                    if('network_interfaces' in elem) {
+                        displayLines = displayLines.concat(formatIfacesForDisplay(elem['network_interfaces']));
+                    }
 
 		    if('device_types' in elem) {
 			device_type_list = JSON.parse(elem['device_types']);
@@ -480,6 +534,10 @@ function create_network(container, data, options) {
 			    displayLines.push('<br><b><u>Port Number:</u></b> ' + portNumber);
 
 			    for (var dataKey in dataForPort) {
+                                if(dataKey == 'port_number') {
+                                    continue
+                                }
+                                
 				if(dataForPort[dataKey].length != 0) {
 				    displayLines.push(dataKey + ': ' + dataForPort[dataKey]);
 				}
@@ -577,8 +635,6 @@ function refreshGraph(forceRedraw = false) {
 
 	    setTimeout(refreshGraph, 100);
 	    refreshWorkspaceTabs();
-	} else {
-	    console.warn('Failed to refresh graph');
 	}
     };
 
@@ -753,8 +809,6 @@ function refreshWorkspaceTabs() {
 		    workspaceTabsDiv.appendChild(span);
 		}
 	    }
-	} else {
-	    console.warn('Failed to refresh workspace tabs');
 	}
     };
 

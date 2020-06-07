@@ -21,15 +21,15 @@ from looking_glass import app
 from NmapQueryTool.lib.scan_data import ScanData
 from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
-from looking_glass.lib.arp import parse_arp_data, ArpDataParsingException
-
-TMP_UPLOAD_DIR = tempfile.mkdtemp()
+from looking_glass.lib.arp import parse_arp_data
+from looking_glass.lib.internal_error import InternalError
 
 application = app # Needed by Elastic Beanstalk / WSGI
 
 # Flask WTF CSRF configuration
 app.config['SECRET_KEY'] = os.urandom(32)
 app.config['WTF_CSRF_TIME_LIMIT'] = None # Makes CSRF token valid for the duration of the session
+app.config['TMP_UPLOAD_DIR'] = tempfile.mkdtemp()
 
 csrf = CSRFProtect(app)
 
@@ -84,7 +84,9 @@ def load_user(username):
 @app.teardown_request
 def remove_session(ex=None):
     data_graph.close_session()
-    shutil.rmtree(TMP_UPLOAD_DIR)
+
+    if os.path.isdir(app.config['TMP_UPLOAD_DIR']):
+        shutil.rmtree(app.config['TMP_UPLOAD_DIR'])
 
 @app.route('/', methods=['GET'])
 def index():
@@ -270,11 +272,15 @@ def merge_new_node_data(node, new_data):
         if not key in node:
             node[key] = new_data[key]
             node_updated = True
+        elif type(node[key]) is set:
+            node[key].add(new_data[key])
+            node_updated = True
         elif node[key] != new_data[key]:
-            # TODO: Create list of values for key instead of ignoring the new data
-            print("WARN: Node with IP %s currently has data '%s' for key '%s', which does not match the new data found, '%s'; ignoring the new data" % (node['ip'], str(node[key]), key, str(new_data[key])))
-        else:
-            print("Node with IP of %s already has the same data for key '%s'; no action necessary" % (node['ip'], key))
+            print("Existing value for key '%s' exists; creating set of previous value (%s) and new value (%s)" % (key, node[key], new_data[key]))
+            curr_val = node[key]
+            # TODO: Make sure this gets visualized correctly (need test NMAP data for this)
+            node[key] = { curr_val, new_data[key] } # Create a value set
+            node_updated = True
 
     return { 'node_updated': node_updated, 'node': node }
 
@@ -316,7 +322,7 @@ def upload_nmap_data():
     return 'ok'
 
 # Reference: https://flask.palletsprojects.com/en/1.1.x/patterns/apierrors/
-@app.errorhandler(ArpDataParsingException)
+@app.errorhandler(InternalError)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
@@ -332,19 +338,12 @@ def upload_arp_data():
     # TODO: Figure how to identify switch in ARP records and use that to connect all records
     for arp_record in arp_records:
         node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
-
-        node_updated = False
-
+        
         if node == None:
-            node_updated = True
             node = create_node(arp_record.address)
-
-        results = merge_new_node_data(node, arp_record.as_dict())
-        node_updated |= results['node_updated']
-        node = results['node']
-
-        if node_updated:
             data_graph.upsert_node(node, username, session['workspace_id'])
+            
+        data_graph.upsert_network_interface(arp_record, node['id'], username, session['workspace_id'])
 
     return 'ok'
 
@@ -356,7 +355,7 @@ def upload_pcap_data():
     session['workspace_id'] = request.headers.get('workspace_id')
 
     # TODO: Enforce max size limit on files (also add check on client side)
-    directory_path = os.path.join(TMP_UPLOAD_DIR, username, 'pcaps')
+    directory_path = os.path.join(app.config['TMP_UPLOAD_DIR'], username, 'pcaps')
     if not os.path.exists(directory_path):
         os.makedirs(directory_path)
 
