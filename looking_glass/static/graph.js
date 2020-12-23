@@ -228,7 +228,16 @@ function getUserId() {
 }
 
 function getWorkspaceId() {
-    return document.head.querySelector("meta[name='workspace-id']").getAttribute("content");
+    workspaceMetaTag = document.head.querySelector("meta[name='workspace-id']")
+    if (workspaceMetaTag == null) {
+        return null;
+    }
+    
+    return workspaceMetaTag.getAttribute("content");
+}
+
+function setWorkspaceId(workspaceId) {
+    document.querySelector('meta[name="workspace-id"]').setAttribute("content", workspaceId);
 }
 
 function postData(methodName, data = {}, contentType = "application/json") {
@@ -438,14 +447,22 @@ function objectToArray(obj) {
 
 function formatIfacesForDisplay(networkInterfaces) {
     displayLines = [];
-    
+
     for(var i = 0; i < networkInterfaces.length; i++) {
         iface = networkInterfaces[i];
 
-        if('name' in iface) {
-            displayLines.push('<b>Interface ' + (i + 1) + ' (' + iface['name'] +')</b>');
+        if('name' in iface && iface['name'] != null) {
+            if(networkInterfaces.length > 1) {
+                displayLines.push('<b>Network Interface ' + (i + 1) + ' (' + iface['name'] +')</b>');
+            } else {
+                displayLines.push('<b>Network Interface (' + iface['name'] +')</b>');
+            }
         } else {
-            displayLines.push('<b>Interface ' + (i + 1) + '</b>');
+            if(networkInterfaces.length > 1) {
+                displayLines.push('<b>Network Interface ' + (i + 1) + '</b>');
+            } else {
+                displayLines.push('<b>Network Interface</b>');
+            }
         }
         
         if('mac_addr' in iface) {
@@ -784,6 +801,7 @@ function refreshWorkspaceTabs() {
 		    // If the user is currently viewing the workspace that has been removed,
 		    // just refresh the page
 		    if (workspaceId == getWorkspaceId()) {
+                        setWorkspaceId(null);
 			location.reload();
 		    }
 		}
@@ -791,6 +809,10 @@ function refreshWorkspaceTabs() {
 	    }
 
 	    for (var i = 0; i < workspaces.length; i++) {
+                if (getWorkspaceId() == null){
+                    setWorkspaceId(workspaces[i]['id']);
+                }
+                
 		if (tabExists(workspaces[i]['name'], currentTabs)) {
 		    continue;
 		} else {
@@ -817,7 +839,7 @@ function refreshWorkspaceTabs() {
 }
 
 function loadWorkspace(workspaceId) {
-    document.querySelector('meta[name="workspace-id"]').setAttribute("content", workspaceId);
+    setWorkspaceId(workspaceId);
     var workspaceTabsDiv = document.getElementById('workspace-tabs');
     var tabs = workspaceTabsDiv.children;
 
@@ -853,6 +875,8 @@ function removeWorkspace() {
 
     if (proceed) {
 	postJsonData('delete_workspace', { 'workspace_id': getWorkspaceId() });
+        setWorkspaceId(null);
+        refreshWorkspaceTabs();
 	location.reload();
     }
 }

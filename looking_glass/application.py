@@ -100,6 +100,14 @@ def index():
     else:
         return render_template('login.html', form=LoginForm())
 
+def ensure_workspace_is_initialized():
+    available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
+    if available_workspaces is None or len(available_workspaces) == 0:
+        new_workspace = data_graph.create_workspace(current_user.get_username(), defaultWorkspaceName(), True)
+        session['workspace_id'] = new_workspace.id
+    else:
+        session['workspace_id'] = available_workspaces[0].id
+
 # Reference: https://flask-login.readthedoces.io/en/latest
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -111,14 +119,8 @@ def login():
 
         if not user is None and user.validate_password(form.password.data.encode('utf-8')):
             login_user(user, remember=True)
-
-            available_workspaces = data_graph.workspaces_for_user(current_user.get_username())
-            if available_workspaces is None or len(available_workspaces) == 0:
-                new_workspace = data_graph.create_workspace(current_user.get_username(), defaultWorkspaceName(), True)
-                session['workspace_id'] = new_workspace.id
-            else:
-                session['workspace_id'] = available_workspaces[0].id
-
+            ensure_workspace_is_initialized()
+            
 
             print('Logged in successfully')
             return redirect(url_for('index'))
@@ -180,6 +182,8 @@ def delete_workspace():
     success = data_graph.delete_workspace(request.headers.get('user_id'), workspace_id)
 
     if success:
+        session.pop('workspace_id') # Remove the workspace_id value for the current session 
+        ensure_workspace_is_initialized()
         response = Response()
         response.status_code = 200
         return response
@@ -337,10 +341,10 @@ def upload_arp_data():
 
     # TODO: Figure how to identify switch in ARP records and use that to connect all records
     for arp_record in arp_records:
-        node = data_graph.get_node_by_ip(arp_record.address, username, session['workspace_id'])
+        node = data_graph.get_node_by_ip(arp_record.ip_address, username, session['workspace_id'])
         
         if node == None:
-            node = create_node(arp_record.address)
+            node = create_node(arp_record.ip_address)
             data_graph.upsert_node(node, username, session['workspace_id'])
             
         data_graph.upsert_network_interface(arp_record, node['id'], username, session['workspace_id'])

@@ -140,7 +140,7 @@ class DataGraph:
 
     def default_workspace_for_user(self, username):
         session = self.create_session()
-        return session.query(Workspace).filter_by(owning_user = username, default = True).first()
+        return session.query(Workspace).filter_by(owning_user = username, active = True, default = True).first()
 
     def changelog_row_for_update(self, session):
         new_version_number = ChangeLog.curr_version_number(session) + 1

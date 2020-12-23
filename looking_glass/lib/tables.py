@@ -72,9 +72,10 @@ class AdditionalNodeData(Base):
 class NetworkInterface(Base):
     __tablename__ = 'network_interfaces'
 
-    node_id = Column(String, ForeignKey("nodes.id"), primary_key = True)
-    workspace_id = Column(String, ForeignKey("workspaces.id"), primary_key = True)
-    mac_addr = Column(String, primary_key = True)
+    id = Column(Integer, primary_key = True)
+    node_id = Column(String, ForeignKey("nodes.id"))
+    workspace_id = Column(String, ForeignKey("workspaces.id"))
+    mac_addr = Column(String)
     name = Column(String)
     hw_type = Column(String)
     arp_flags = Column(String)
