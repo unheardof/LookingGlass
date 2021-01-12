@@ -4,6 +4,7 @@
 cd $(dirname "${BASH_SOURCE[0]}")
 cd ../..
 
+# TODO: Build the HTTPS version of the container (with certificate generation, etc.)
 source bin/build_container.sh
 
 #

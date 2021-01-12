@@ -7,6 +7,9 @@ APP="docker.looking_glass"
 # Reference: https://stackoverflow.com/questions/3822621/how-to-exit-if-a-command-failed/3822709
 bin/run_tests.sh || { echo 'Tests failed; aborting build'; exit 1; }
 
+# Ensure docker is running
+pgrep -f docker > /dev/null || sudo service docker start
+
 if docker container ls | awk '{if(NR>1)print $2}' | grep $APP; then
     echo 'Stopping and removing existing container...'
     docker stop docker.looking_glass

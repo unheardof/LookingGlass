@@ -1,7 +1,12 @@
 # LookingGlass
 A collaborative network / infrastructure visualization tool oriented towards use for defensive and offensive cyber operations
 
-# How to run
+# How to run server in container
+
+1. Run the bin/https/build_and_run_container_https.sh script (use the bin/http/build_and_run_container_http.sh script to run the container in HTTP mode)
+1. Navigate to the appropriate URL
+
+# How to run locally (debug mode)
 
 From the command line, execute:
 

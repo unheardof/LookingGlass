@@ -56,12 +56,12 @@ def test_col_headers_with_offsets_2():
 def test_col_headers_with_offsets_3():
     headers_with_offsets = ArpTableParser.col_headers_with_offsets("Address HWtype HWaddress Flags Mask Iface")
     
-    assert(headers_with_offsets['IP address']['start'] == 0)
-    assert(headers_with_offsets['IP address']['end'] == 8)
-    assert(headers_with_offsets['HW type']['start'] == 8)
-    assert(headers_with_offsets['HW type']['end'] == 15)
-    assert(headers_with_offsets['HW address']['start'] == 15)
-    assert(headers_with_offsets['HW address']['end'] == 25)
+    assert(headers_with_offsets['Address']['start'] == 0)
+    assert(headers_with_offsets['Address']['end'] == 8)
+    assert(headers_with_offsets['HWtype']['start'] == 8)
+    assert(headers_with_offsets['HWtype']['end'] == 15)
+    assert(headers_with_offsets['HWaddress']['start'] == 15)
+    assert(headers_with_offsets['HWaddress']['end'] == 25)
     assert(headers_with_offsets['Flags']['start'] == 25)
     assert(headers_with_offsets['Flags']['end'] == 31)
     assert(headers_with_offsets['Mask']['start'] == 31)
