@@ -1,0 +1,9 @@
+# Reference: https://stackoverflow.com/questions/2720014/how-to-upgrade-all-python-packages-with-pip
+
+# Activate the virtual environment (source venv/bin/activate)
+
+# Replace all '==' with '>=' in requirements.txt and then run:
+pip3 install -r requirements.txt  --upgrade
+
+# Update the requirements file
+pip3 freeze > requirements.txt
