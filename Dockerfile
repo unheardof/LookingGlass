@@ -1,5 +1,5 @@
-# Based on https://www.digitalocean.com/community/tutorials/how-to-build-and-deploy-a-flask-looking_glasslication-using-docker-on-ubuntu-18-04
-FROM tiangolo/uwsgi-nginx-flask:python3.6
+FROM tiangolo/uwsgi-nginx-flask:python3.11
+
 ARG NGINX_CONF_FILE
 
 RUN apt-get update &&\

@@ -6,7 +6,7 @@
 
 # Create new virtual environment:
 
-virtualenv [virtual env name; normally venv]
+virtualenv [venv path/name; ex: ./venv]
 
 # Set Python version
 

@@ -3,6 +3,7 @@ import datetime
 from flask_login import UserMixin
 
 import bcrypt
+import sqlalchemy
 import uuid
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -145,7 +146,7 @@ class Edge(Base):
 def setup_tables(engine):
     # TODO: Implement support for performing database migration / schema change if needed
     
-    if not engine.dialect.has_table(engine, 'change_log'):
+    if not sqlalchemy.inspect(engine).has_table('change_log'):
         Base.metadata.create_all(engine)
 
     # Initialize changelog table
