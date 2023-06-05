@@ -1,20 +1,3 @@
-FROM python:3.9
-
-WORKDIR /code
-
-RUN apt-get update &&\
-    apt-get -y install gcc &&\
-    apt-get -y install openssl &&\
-    apt-get -y install libssl-dev
-
-COPY ./requirements.txt /code/requirements.txt
-
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
-
-COPY ./looking_glass /code/looking_glass
-
-CMD ["gunicorn", "--conf", "looking_glass/gunicorn_conf.py", "--bind", "0.0.0.0:80", "looking_glass.application:app"]
-
 # FROM tiangolo/uwsgi-nginx-flask:python3.11
 
 # ARG NGINX_CONF_FILE
@@ -23,6 +6,11 @@ CMD ["gunicorn", "--conf", "looking_glass/gunicorn_conf.py", "--bind", "0.0.0.0:
 #     apt-get -y install gcc &&\
 #     apt-get -y install openssl &&\
 #     apt-get -y install libssl-dev
+
+# TODO: Create web server user and use that for the pip install and for running the web app
+# COPY ./requirements.txt /var/www/requirements.txt
+# RUN pip install --upgrade pip && pip install -r /var/www/requirements.txt
+# COPY ./looking_glass /looking_glass
 
 # ENV LISTEN_PORT 80
 # ENV LISTEN_PORT 443
@@ -42,3 +30,40 @@ CMD ["gunicorn", "--conf", "looking_glass/gunicorn_conf.py", "--bind", "0.0.0.0:
 
 # RUN pip install --upgrade pip && pip install -r /var/www/requirements.txt
 
+
+
+# syntax=docker/dockerfile:1.4
+FROM --platform=$BUILDPLATFORM python:3.10-alpine AS builder
+
+RUN apt-get update &&\
+    apt-get -y install gcc &&\
+    apt-get -y install openssl &&\
+    apt-get -y install libssl-dev
+
+WORKDIR /app
+
+COPY requirements.txt /app
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip3 install --upgrade pip3 &&
+    pip3 install -r requirements.txt
+
+COPY ./app
+
+ENTRYPOINT ["python3"]
+CMD ["app.py"]
+
+FROM builder as dev-envs
+
+RUN <<EOF
+apk update
+apk add git
+EOF
+
+RUN <<EOF
+addgroup -S docker
+adduser -S --shell /bin/bash --ingroup docker vscode
+EOF
+
+# install Docker tools (cli, buildx, compose)
+COPY --from=gloursdocker/docker / /

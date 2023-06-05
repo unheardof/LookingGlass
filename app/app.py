@@ -17,12 +17,18 @@ import tempfile
 import threading
 import uuid
 
-from looking_glass import app
+from flask import Flask
+
+# TODO: Remove
+# from looking_glass import app
 from NmapQueryTool.lib.scan_data import ScanData
 from looking_glass.lib.data_graph import DataGraph
 from looking_glass.lib.tables import User
 from looking_glass.lib.arp import parse_arp_data
 from looking_glass.lib.internal_error import InternalError
+
+app = Flask(__name__)
+name = "looking_glass"
 
 application = app # Needed by Elastic Beanstalk / WSGI
 
@@ -441,4 +447,5 @@ if __name__ == '__main__':
         app.logger.disabled = True
 
     # host='0.0.0.0' enables connections using the local network interface
-    app.run(host='0.0.0.0', threaded=True)
+    # app.run(host='0.0.0.0', threaded=True)
+    app.run(host='0.0.0.0', port=8000)
