@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.4
+
 # FROM tiangolo/uwsgi-nginx-flask:python3.11
 
 # ARG NGINX_CONF_FILE
@@ -30,9 +32,6 @@
 
 # RUN pip install --upgrade pip && pip install -r /var/www/requirements.txt
 
-
-
-# syntax=docker/dockerfile:1.4
 FROM --platform=$BUILDPLATFORM python:3.10-alpine AS builder
 
 RUN apt-get update &&\

@@ -32,3 +32,14 @@ To make the application accessible to other computers, add `--host=0.0.0.0` to t
 
 **Note:** you will be billed for all AWS infrastructure used will the application / environment are active; to stop the application, run `eb terminate <environment name>`
 See [this page](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-python-flask.html) for more details
+
+# How to setup Amazon Linux instance for Docker Compose installation
+
+1. Install Docker: sudo yum install docker
+1. Add user to the docker group: sudo usermod -aG docker $USER
+1. Install Docker Compose (https://docs.docker.com/compose/install/linux/#install-using-the-repository)
+   1. DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+   1. mkdir -p $DOCKER_CONFIG/cli-plugins
+   1. curl -SL https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+   1. chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+1. Start Docker service: sudo service docker start
