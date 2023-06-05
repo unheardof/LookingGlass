@@ -3,7 +3,10 @@ A collaborative network / infrastructure visualization tool oriented towards use
 
 # Project structure
 
-Reference: https://flask.palletsprojects.com/en/2.3.x/patterns/packages/
+References:
+
+- https://github.com/docker/awesome-compose/tree/master/nginx-flask-mysql
+- https://flask.palletsprojects.com/en/2.3.x/patterns/packages/
 
 Project structure:
 ```
