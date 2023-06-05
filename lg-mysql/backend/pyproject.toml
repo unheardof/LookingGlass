@@ -1,0 +1,10 @@
+[project]
+name = "looking_glass"
+version = "1.0"
+dependencies = [
+    "flask",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

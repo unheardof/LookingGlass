@@ -8,6 +8,8 @@ You can open this sample in the Dev Environments feature of Docker Desktop versi
 
 ### Python/Flask with Nginx proxy and MySQL database
 
+Reference: https://flask.palletsprojects.com/en/2.3.x/patterns/packages/
+
 Project structure:
 ```
 .

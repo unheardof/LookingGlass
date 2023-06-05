@@ -1,0 +1,96 @@
+<!-- Reference: http://visjs.org/docs/network/ -->
+<!-- Based on this example: http://visjs.org/examples/network/other/manipulation.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="user-id" content="{{ current_user.id }}">
+    <meta name="workspace-id" content="{{ session['workspace_id'] }}">
+    
+    <title>Looking Glass</title>
+
+    <!-- Reference: https://stackoverflow.com/questions/24514936/how-can-i-serve-npm-packages-using-flask -->
+    <script src="{{ url_for('static', filename='node_modules/vis-network/dist/vis-network.js')}}"></script>
+    <script type="text/javascript" src="static/graph.js"></script>
+
+    <link href="{{ url_for('static', filename='node_modules/vis-network/dist/dist/vis-network.min.css') }}" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/graph.css') }}">
+  </head>
+
+  <body onload="init();">
+    <div id="node-popUp" width="auto">
+      <span id="operation">node</span> <br>
+      <table style="margin:auto;">
+	<tr>
+	  <td>IP</td><td><input id="node-ip" value="" /></td>
+	</tr>
+	<tr>
+	  <td>Hostname</td><td><input id="node-hostname" value="new value" /></td>
+	</tr>
+	<tr>
+	  <td>Type</td><td>
+	    <select id="node-type" required>
+	      <option selected value="other">Generic Device</option> <!-- Default option -->
+	      <option value="ops_box">Ops Box (physical computer you're typing on)</option>
+	      <option value="redirect">Redirector</option>
+	      <option value="beacon">Beacon</option>
+	      <option value="windows_host">Windows Host</option>
+	      <option value="linux_host">Linux Host</option>
+	      <option value="router">Router</option>
+	      <option value="network_switch">Switch</option>
+	      <option value="nic">Network Interface</option>
+	      <option value="wan">WAN</option>
+	    </select>
+	  </td>
+	</tr>
+      </table>
+      <input type="button" value="save" id="saveButton" />
+      <input type="button" value="cancel" id="cancelButton" />
+    </div>
+
+    <div id="master-div">
+      <div id="mynetwork" onclick="closeControlPanel()"></div>
+      <div id="workspace-tabs">
+	{% for workspace in session['workspaces'] %}
+	<!-- Enclosing in span to make it easier to dynamically add new buttons -->
+	<span>
+	  <button class="tab-buttons" onclick="loadWorkspace({{ workspace['id'] }})" >{{ workspace['name'] }}</button>
+	  <input type="hidden" value="{{ workspace['id'] }}" />
+	</span>
+	{% endfor %}
+      </div>
+
+      <span id="openControlPanelSpan" onclick="openControlPanel()">&#9776;</span>
+
+      <div class="controlPanelClass" id="controlPanel">
+	<!-- Based on code from https://developer.mozilla.org/en-US/docs/Web/API/File/Using_files_from_web_applications -->
+
+	<input type="file" id="nmapFileSelector" style="display:none" onchange="uploadNmapFile(this.files)" />
+	<input type="file" id="arpFileSelector" style="display:none" onchange="uploadArpFile(this.files)" />
+	<input type="file" id="pcapFileSelector" style="display:none" onchange="uploadPcapFile(this.files)" />
+	<input type="file" id="netflowFileSelector" style="display:none" onchange="uploadNetflowFile(this.files)" />
+
+	<a hfef="javascript:void(0)" class="closeButton" onclick="closeControlPanel()">&times;</a>
+	<h2>Hi {{ current_user.get_username() }}</h2>
+	<hr><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="createWorkspace" onclick="createWorkspace()">Create New Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="removeWorkspace" onclick="removeWorkspace()">Remove Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="shareWorkspace" onclick="shareWorkspace()">Share Workspace</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="unshareWorkspace" onclick="unshareWorkspace()">Unshare Workspace</a><br><br>
+	<hr><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="nmapFileSelectOpen" onclick="openNmapFileSelector()">Upload NMAP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="arpFileSelectOpen" onclick="openArpFileSelector()">Upload ARP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="pcapFileSelectOpen" onclick="openPcapFileSelector()">Upload PCAP data</a><br><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="netflowFileSelectOpen" onclick="openNetflowFileSelector()">Upload Net Flow data</a><br><br>
+	<hr><br>
+	<a hfef="javascript:void(0)" class="controlButton" id="logoutControl" onclick="logout()">Logout</a>
+      </div>
+
+      <div id="contextPanel"></div>
+    </div>
+  </body>
+</html>
+
+

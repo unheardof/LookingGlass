@@ -1,0 +1,145 @@
+* {
+    margin: 0;
+}
+html {
+    width: 100%;
+    height: 100%;
+}
+body {
+    color: #d3d3d3;
+    font: 12pt arial;
+    background-color: #000000;
+    height: 100%;
+    width: 100%;
+}
+#controlPanel {
+    display: none;
+    border-right: 1.5px solid #cccccc;
+    color: #03fc45;
+    height: calc(100% - 20px - 25px); /* 20px for top and bottom padding and 25px for the workspace tabs*/
+    background-color: black;
+    width: 225px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 299;
+    padding-left: 5px;
+    padding-right: 0px;
+    padding-top: 15px;
+    padding-bottom: 5px;
+    font-family: "Courier";
+    font-size: 15px;
+}
+#contextPanel {
+    display: none;
+    border-left: 1.5px solid #cccccc;
+    color: #03fc45;
+    background-color: black;
+    height: calc(100% - 20px - 25px); /* 20px for top and bottom padding and 25px for the workspace tabs*/
+    width: 275px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 299;
+    padding: 10px;
+    font-family: "Courier";
+    font-size: 16px;
+    overflow-x: hidden;
+    overflow-y: auto; /* Enable vertical scrolling if content will not fit within the div */
+}
+.closeButton {
+    position: absolute;
+    top: 0;
+    font-size: 25px;
+    right: 10px;
+    padding-left: 5px;
+    padding-right: 5px;
+}
+.controlButton {
+    font: 16px Courier;
+    display: block;
+    position: absolute;
+}
+a.controlButton:hover, a.closeButton:hover {
+    background-color: lightgreen;
+    color: white;
+}
+#openControlPanelSpan {
+    position: absolute;
+    left: 0px;
+    top: 50%;
+    font-size: 30px;
+    cursor: pointer;
+}
+#master-div {
+    height: 100%;
+    width: 100%;
+    padding: 0px;
+    margin: 0px;
+}
+#mynetwork {
+    position:relative;
+    height: calc(100% - 25px); /* 25px for the workspace tabs*/
+    margin: 0 auto;
+    background-color: black;
+    border-bottom: 1.5px solid #cccccc;
+}
+#workspace-tabs {
+    height: 20px;
+    width: 100%;
+    background-color: #000000;
+    padding: 0px;
+    margin: 0px;
+    float: bottom;
+}
+.tab-buttons {
+    background-color: black;
+    border: 1px solid #cccccc;
+    border-top: none;
+    float: left;
+    height: 20px;
+    font: 16px Courier;
+    position: relative;
+    bottom: 0px;
+    color: #03fc45;
+    padding: 2px;
+}
+table.legend_table {
+    font-size: 11px;
+    border-width:1px;
+    border-color:#d3d3d3;
+    border-style:solid;
+}
+table.legend_table,td {
+    border-width:1px;
+    border-color:#d3d3d3;
+    border-style:solid;
+    padding: 2px;
+}
+div.table_content {
+    width:80px;
+    text-align:center;
+}
+div.table_description {
+    width:100px;
+}
+#operation {
+    font-size:28px;
+}
+#node-popUp {
+    color: black;
+    display:none;
+    position:fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index:299;
+    width:auto;
+    height:auto;
+    background-color: #f9f9f9;
+    border-style:solid;
+    border-width:3px;
+    border-color: #5394ed;
+    padding:10px;
+    text-align: center;
+}

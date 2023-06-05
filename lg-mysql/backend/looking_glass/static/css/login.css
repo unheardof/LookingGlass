@@ -1,0 +1,102 @@
+body {
+    background-color: black;
+    width: 90%;
+    height: 90%;
+}
+
+div.container {
+    position: absolute;
+    margin: 5px;
+    width: auto;
+    height: auto;
+    text-align: left;
+    line-height: 15px;
+    background-color: black;
+    color: #03fc45;
+    padding: 5px;
+    font-size: 20px;
+    font-family: Courier;
+}
+
+p.form_text {
+    display: block;
+    left: 0;
+    width: 100px;
+    height: 20px;
+    margin: 0;
+    padding-right: 5px;
+}
+
+input {
+    display: block;
+    left: 60px;
+    height: 20px;
+    width: 500px;
+    background-color: black;
+    color: #03fc45;
+    margin-left: 0;
+    margin-right: 0;
+    border: none;
+    font-size: 20px;
+    font-family: "Courier";
+}
+
+input[type=text] {
+    padding-left: 10px;
+}
+
+input[type=text]:focus {
+    background-color: lightgreen;
+    color: white;
+}
+
+input[type=password] {
+    padding-left: 10px;
+}
+
+input[type=password]:focus {
+    background-color: lightgreen;
+    color: white;
+}
+
+input[type=submit] {
+    height: auto;
+    width: auto;
+    font-size: 20px;
+    font-family: Courier;
+    cursor: pointer;
+    left: 0;
+    border-bottom: solid 1px;
+    margin-bottom: 5px;
+}
+
+input[type=submit]:hover {
+    background-color: lightgreen;
+    color: white;
+    /* background: #bbb; */
+}
+
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: white;
+    opacity: 1; /* Firefox */
+    font-family: Courier;
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: white;
+    font-family: Courier;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+    color: white;
+    font-family: Courier;
+}
+
+table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+tr {
+    width: 100%;
+}
