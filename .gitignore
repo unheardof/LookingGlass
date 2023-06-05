@@ -13,3 +13,4 @@ looking_glass.db
 build/*
 dist/*
 looking_glass.egg-info/*
+password.txt
