@@ -40,7 +40,8 @@ login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-data_graph = DataGraph()
+# TODO: Add support for optionally running using sqlite
+data_graph = DataGraph(db='mysql')
 
 # How to run locally (note: do not use this in production):
 #

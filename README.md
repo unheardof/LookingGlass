@@ -54,3 +54,4 @@ To make the application accessible to other computers, add `--host=0.0.0.0` to t
    1. curl -SL https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
    1. chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 1. Start Docker service: sudo service docker start
+1. Start a new terminal session for the current user to refresh the user group membership
