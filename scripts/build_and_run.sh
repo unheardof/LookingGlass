@@ -8,5 +8,5 @@ if [ ! -f "$SCRIPT_DIR/../db/password.txt" ]; then
     echo "$db_password" > "$SCRIPT_DIR/../db/password.txt"
 fi
 
-cd "$SCRIPT_DIR/.." && docker compose up
+cd "$SCRIPT_DIR/.." && docker compose up -d
 
