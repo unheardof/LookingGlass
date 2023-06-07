@@ -4,6 +4,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_STAGING_DIR="/tmp/looking_glass_staging"
 STAGING_DIR="$BASE_STAGING_DIR/looking_glass"
 
+"$SCRIPT_DIR"/clean_build_and_run.sh
+
 mkdir -p "$STAGING_DIR"
 pushd "$STAGING_DIR" > /dev/null
 

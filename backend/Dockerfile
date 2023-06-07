@@ -12,14 +12,6 @@ RUN apk --no-cache add musl-dev linux-headers g++
 RUN pip3 install --upgrade pip
 RUN --mount=type=cache,target=/root/.cache/pip \
    pip3 install -r looking_glass/requirements.txt
-# RUN pip3 install --upgrade pip3 && pip3 install -r /code/requirements.txt
-
-# COPY looking_glass/__init__.py .
-# COPY looking_glass/pyproject.toml .
-# COPY looking_glass/app.py .
-# COPY looking_glass/static .
-# COPY looking_glass/templates .
-# COPY looking_glass/lib .
 
 ENV FLASK_APP looking_glass/app.py
 ENV FLASK_ENV development
@@ -46,6 +38,7 @@ EOF
 # install Docker tools (cli, buildx, compose)
 COPY --from=gloursdocker/docker / /
 
-# CMD ["sleep", "1000000"]
 # CMD ["python3", "-m", "flask", "run"]
 CMD ["flask", "run"]
+# CMD ["sleep", "1000000"]
+

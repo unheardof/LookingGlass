@@ -121,7 +121,7 @@ def login():
     if form.validate_on_submit():
         user = data_graph.load_user(form.username.data)
 
-        if not user is None and user.validate_password(form.password.data.encode('utf-8')):
+        if not user is None and user.validate_password(form.password.data):
             login_user(user, remember=True)
             ensure_workspace_is_initialized()
             
@@ -153,7 +153,7 @@ def register():
                 if form.password.data != form.confirm.data:
                     error = 'Passwords do not match'
                 else:
-                    data_graph.create_user(form.username.data, form.password.data.encode('utf-8'))
+                    data_graph.create_user(form.username.data, form.password.data)
 
                     print('User %s has been registered' % form.username.data)
                     return redirect(url_for('login'))

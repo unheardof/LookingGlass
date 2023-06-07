@@ -18,7 +18,8 @@ services:
     networks:
       - backnet
     environment:
-      - MYSQL_DATABASE=example
+      # Reference: https://hub.docker.com/_/mysql/
+      - MYSQL_DATABASE=looking_glass
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
     expose:
       - 3306

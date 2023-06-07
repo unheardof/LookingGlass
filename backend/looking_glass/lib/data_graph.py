@@ -17,9 +17,7 @@ class DataGraph:
         if db == 'sqlite':
             self.engine = create_engine('sqlite:////tmp/looking_glass.db', isolation_level='SERIALIZABLE')
         elif db == 'mysql':
-            
-
-            self.engine = create_engine(f'mysql+mysqldb://{self._db_username()}:{self._db_password()}@db/looking_glass', isolation_level='SERIALIZABLE')
+            self.engine = create_engine(f'mysql+pymysql://{self._db_username()}:{self._db_password()}@db:3306/looking_glass?charset=utf8mb4', isolation_level='SERIALIZABLE')
         else:
             raise Exception(f"Unknown db type '{db}' encountered")
 
@@ -27,11 +25,11 @@ class DataGraph:
         setup_tables(self.engine)
 
     def _db_username(self):
-        return 'lg_db_user'
+        return 'root'
         
     def _db_password(self):
-        with open(password_file, 'r') as pf:
-            password = pf.read('/run/secrets/db-password')
+        with open('/run/secrets/db-password', 'r') as pf:
+            password = pf.read().strip()
 
         return password
         
@@ -228,9 +226,12 @@ class DataGraph:
         new_node = Node.from_dict(node_obj_dict, workspace_id)
         new_node.version_number = new_changelog_row.version_number
 
-        session.add(new_node)
         session.add(new_changelog_row)
-
+        session.flush() # make sure the new changelog row ID is fetched from the database
+        
+        session.add(new_node)
+        session.flush() # make sure the new Node ID is fetched from the database
+        
         for key in additional_node_data:
             session.add(
                 AdditionalNodeData(
