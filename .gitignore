@@ -14,3 +14,4 @@ build/*
 dist/*
 looking_glass.egg-info/*
 password.txt
+looking_glass.app

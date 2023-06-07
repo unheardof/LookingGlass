@@ -55,3 +55,23 @@ To make the application accessible to other computers, add `--host=0.0.0.0` to t
    1. chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
 1. Start Docker service: sudo service docker start
 1. Start a new terminal session for the current user to refresh the user group membership
+
+# Bundle for distribution
+
+1. Run the `scripts/bundle_app.sh` script. Will create a bundled app file named `looking_glass.app`
+
+# Run from bundle
+
+1. Use the steps above (or run the `scripts/install_docker.sh` script) to install docker and docker compose on the server
+1. Make the bundle executable: `chmod +x looking_glass.app`
+1. Run the bundle: `./looking_glass.app`
+
+## Stop the app
+
+1. `cd looking_glass`
+1. `docker compose down`
+
+## Restart the app
+
+1. `cd looking_glass`
+1. `docker compose up -d --no-build`

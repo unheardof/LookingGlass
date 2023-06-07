@@ -3,7 +3,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 if [ ! -f "$SCRIPT_DIR/../db/password.txt" ]; then
-    read -p "Enter desired DB password: " db_password
+    echo -n "Enter desired DB password (do not use @): "
+    read -s db_password
     mkdir "$SCRIPT_DIR/../db"
     echo "$db_password" > "$SCRIPT_DIR/../db/password.txt"
 fi

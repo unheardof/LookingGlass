@@ -15,7 +15,7 @@ services:
     networks:
       - backnet
     environment:
-      - MYSQL_DATABASE=example
+      - MYSQL_DATABASE=looking_glass
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
     expose:
       - 3306
