@@ -365,6 +365,7 @@ function delete_view_specific_data_attrs(data) {
     delete data.shadow;
     delete data.fixed;
     delete data.margin;
+    delete data.imagePadding;
 
     return data;
 }

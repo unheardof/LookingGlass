@@ -12,4 +12,6 @@ fi
 "$SCRIPT_DIR"/docker_clean.sh
 "$SCRIPT_DIR"/clean_db.sh
 
+rm -f "$SCRIPT_DIR/../proxy/domain.{crt,key}"
+
 docker container prune -f

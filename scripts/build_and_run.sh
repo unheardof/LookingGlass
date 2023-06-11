@@ -9,5 +9,9 @@ if [ ! -f "$SCRIPT_DIR/../db/password.txt" ]; then
     echo "$db_password" > "$SCRIPT_DIR/../db/password.txt"
 fi
 
+if [[ ! -f "$SCRIPT_DIR/../proxy/domain.cert" || ! -f "$SCRIPT_DIR/../proxy/domain.key" ]]; then
+    cd "$SCRIPT_DIR/../proxy" && "$SCRIPT_DIR"/generate_certs.sh
+fi
+
 cd "$SCRIPT_DIR/.." && docker compose up -d
 

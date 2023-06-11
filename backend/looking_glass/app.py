@@ -170,6 +170,7 @@ def create_workspace():
     workspace_name = request.headers.get('user_id') + ': ' + request.json['workspace_name']
     success = data_graph.create_workspace(request.headers.get('user_id'), workspace_name)
 
+    # TODO: Add additional response headers: https://flask.palletsprojects.com/en/2.0.x/security/?highlight=https
     if success:
         response = Response()
         response.status_code = 200
@@ -443,8 +444,7 @@ if __name__ == '__main__':
         log.disabled = True
         app.logger.disabled = True
 
-    # host='0.0.0.0' enables connections using the local network interface
-    # app.run(host='0.0.0.0', threaded=True)
-    # app.run(host='0.0.0.0', port=8000)
+    # TODO: add threaded=True
+    # app.run(threaded=True)
     app.run()
 

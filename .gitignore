@@ -15,3 +15,5 @@ dist/*
 looking_glass.egg-info/*
 password.txt
 looking_glass.app
+domain.key
+domain.crt
