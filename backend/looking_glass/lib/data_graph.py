@@ -17,7 +17,7 @@ class DataGraph:
         if db == 'sqlite':
             self.engine = create_engine('sqlite:////tmp/looking_glass.db', isolation_level='SERIALIZABLE')
         elif db == 'mysql':
-            self.engine = create_engine(f'mysql+pymysql://{self._db_username()}:{self._db_password()}@db:3306/looking_glass?charset=utf8mb4', isolation_level='SERIALIZABLE')
+            self.engine = create_engine(f'mysql+pymysql://{self._db_username()}:{self._db_password()}@db:3306/looking_glass', isolation_level='SERIALIZABLE')
         else:
             raise Exception(f"Unknown db type '{db}' encountered")
 
