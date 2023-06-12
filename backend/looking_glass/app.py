@@ -28,6 +28,7 @@ from looking_glass.lib.internal_error import InternalError
 
 
 # app = Flask(__name__)
+log = logging.getLogger('werkzeug')
 
 # Flask WTF CSRF configuration
 app.config['SECRET_KEY'] = os.urandom(32)
@@ -299,8 +300,10 @@ def upload_nmap_data():
     nmap_data = request.json
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
-    data = ScanData.create_from_nmap_data(io.StringIO(nmap_data))
 
+    data = ScanData.create_from_nmap_data(nmap_data)
+
+    log.info(f'Loading data for {len(data.host_data_list())} hosts found in the provided nmap data')
     for host in data.host_data_list():
         node = data_graph.get_node_by_ip(host.ip, username, session['workspace_id'])
 
@@ -433,17 +436,6 @@ def handle_csrf_error(e):
 
 # For running locally in debug mode
 if __name__ == '__main__':
-    verbose = False
-    parser = argparse.ArgumentParser(description='Development mode command line options')
-    parser.add_argument('-v', '--verbose', action='store_true')
-    args = parser.parse_args()
-
-    if not args.verbose:
-        # Silence Flask server logging
-        log = logging.getLogger('werkzeug')
-        log.disabled = True
-        app.logger.disabled = True
-
     # TODO: add threaded=True
     # app.run(threaded=True)
     app.run()

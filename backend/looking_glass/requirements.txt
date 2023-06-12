@@ -21,7 +21,7 @@ Jinja2==3.1.2
 jmespath==1.0.1
 MarkupSafe==2.1.2
 more-itertools==9.1.0
-nmap-query-tool==1.1.2
+nmap-query-tool==1.1.7
 numpy==1.24.3
 packaging==23.1
 pandas==2.0.2

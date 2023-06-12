@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker logs docker.looking_glass | tail
+docker logs -f $(docker ps | grep lookingglass-backend | awk '{ print $1 }')
