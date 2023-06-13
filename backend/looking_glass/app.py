@@ -17,7 +17,6 @@ import tempfile
 import threading
 import uuid
 
-# from flask import Flask
 from looking_glass import app
 
 from NmapQueryTool.lib.scan_data import ScanData
@@ -27,8 +26,7 @@ from looking_glass.lib.arp import parse_arp_data
 from looking_glass.lib.internal_error import InternalError
 
 
-# app = Flask(__name__)
-log = logging.getLogger('werkzeug')
+log = logging.getLogger('looking_glass')
 
 # Flask WTF CSRF configuration
 app.config['SECRET_KEY'] = os.urandom(32)
@@ -43,11 +41,6 @@ login_manager.init_app(app)
 
 # TODO: Add support for optionally running using sqlite
 data_graph = DataGraph(db='mysql')
-
-# How to run locally (note: do not use this in production):
-#
-# FLASK_APP=application.py flask run --host=0.0.0.0
-#
 
 class LoginForm(FlaskForm):
     username = StringField('Username')
@@ -282,13 +275,38 @@ def merge_new_node_data(node, new_data):
         if not key in node:
             node[key] = new_data[key]
             node_updated = True
+            
         elif type(node[key]) is set:
-            node[key].add(new_data[key])
+            if type(new_data[key]) is list:
+                for val in new_data[key]:
+                    node[key].add(val)
+            else:
+                node[key].add(new_data[key])
+            
             node_updated = True
+
+        elif type(new_data[key]) is dict:
+            if type(node[key]) is dict:
+                for sub_key in new_data[key]:
+                    node[key][sub_key] = new_data[key][sub_key]
+            else:
+                raise Exception(f"Unable to determine key for adding '{new_data[key]}' to the data for an existing node with ip {node['ip']}")
+                
+            node_updated = True
+
+        elif type(new_data[key]) is list:
+            new_set = { node[key] }
+            
+            for val in new_data[key]:
+                new_set.add(val)
+                
+            node[key] = new_set
+                
+            node_updated = True
+            
         elif node[key] != new_data[key]:
-            print("Existing value for key '%s' exists; creating set of previous value (%s) and new value (%s)" % (key, node[key], new_data[key]))
+            log.debug("Existing value for key '%s' exists; creating set of previous value (%s) and new value (%s)" % (key, node[key], new_data[key]))
             curr_val = node[key]
-            # TODO: Make sure this gets visualized correctly (need test NMAP data for this)
             node[key] = { curr_val, new_data[key] } # Create a value set
             node_updated = True
 
@@ -301,6 +319,10 @@ def upload_nmap_data():
     username = request.headers.get('user_id')
     session['workspace_id'] = request.headers.get('workspace_id')
 
+    # TODO: Remove
+    # TODO: Add instructions on how to enable remote debugging (compose, requirements.txt, breakpoint, listener/connection script)
+    # import sdb
+    # sdb.Sdb(notify_host='0.0.0.0', colorize=False).set_trace()
     data = ScanData.create_from_nmap_data(nmap_data)
 
     log.info(f'Loading data for {len(data.host_data_list())} hosts found in the provided nmap data')
@@ -347,7 +369,6 @@ def upload_arp_data():
     session['workspace_id'] = request.headers.get('workspace_id')
     arp_records = parse_arp_data(request.json)
 
-    # TODO: Figure how to identify switch in ARP records and use that to connect all records
     for arp_record in arp_records:
         node = data_graph.get_node_by_ip(arp_record.ip_address, username, session['workspace_id'])
         
@@ -436,7 +457,17 @@ def handle_csrf_error(e):
 
 # For running locally in debug mode
 if __name__ == '__main__':
+    verbose = False
+    parser = argparse.ArgumentParser(description='Development mode command line options')
+    parser.add_argument('-v', '--verbose', action='store_true')
+    args = parser.parse_args()
+
+    if not args.verbose:
+        # Silence Flask server logging
+        log = logging.getLogger('werkzeug')
+        log.disabled = True
+        app.logger.disabled = True
+    
     # TODO: add threaded=True
     # app.run(threaded=True)
     app.run()
-

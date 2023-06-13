@@ -75,3 +75,13 @@ To make the application accessible to other computers, add `--host=0.0.0.0` to t
 
 1. `cd looking_glass`
 1. `docker compose up -d --no-build`
+
+# Debugging
+
+1. Enable debugging, add the following lines to the `backend` portion of the `compose.yaml` file: ```
+    stdin_open: true
+    tty: true
+```
+1. Set a breakpoint in the application code: `import pdb; pdb.set_trace()`
+1. Rebuild the containers: `./scripts/clean_build_and_run.sh`
+1. Attach to the backend container; will drop you into a pdb session when the breakpoint is hit: `scripts/pdb_attach.sh`

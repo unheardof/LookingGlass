@@ -1,7 +1,9 @@
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, and_
+
 import boto3
+import json
 import os.path
 import sys
 import datetime
@@ -56,7 +58,12 @@ class DataGraph:
         node_network_interfaces = session.query(NetworkInterface).filter_by(node_id = node.id).all()
 
         for additional_node_data in additional_node_data_list:
-            node_data[additional_node_data.data_key] = additional_node_data.data_value
+            if additional_node_data.data_key == 'port_data':
+                node_data[additional_node_data.data_key] = json.loads(
+                    additional_node_data.data_value.replace("'", '"')
+                )
+            else:
+                node_data[additional_node_data.data_key] = additional_node_data.data_value
 
         if len(node_network_interfaces) > 0:
             node_data['network_interfaces'] = [ i.as_dict() for i in node_network_interfaces ]            

@@ -7,7 +7,7 @@ import sqlalchemy
 import uuid
 
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, ForeignKey, Integer, Float, DateTime, String, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, Float, DateTime, String, Boolean, Text
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
@@ -77,7 +77,7 @@ class AdditionalNodeData(Base):
     id = Column(Integer, primary_key = True)
     node_id = Column(String(DEFAULT_NAME_LENGTH), ForeignKey("nodes.id"))
     data_key = Column(String(DEFAULT_NAME_LENGTH))
-    data_value = Column(String(LONG_TEXT_LENGTH))
+    data_value = Column(Text)
 
 class NetworkInterface(Base):
     __tablename__ = 'network_interfaces'
