@@ -136,7 +136,7 @@ var options = {
 	    selected_edge = network.body.edges[data.id];
 	    data['previous_source_node'] = selected_edge['fromId'];
 	    data['previous_destination_node'] = selected_edge['toId'];
-	    
+
 	    if (data.from == data.to) {
 		var r = confirm("Do you want to connect the node to itself?");
 		if (r == true) {
@@ -230,9 +230,9 @@ function getUserId() {
 function getWorkspaceId() {
     workspaceMetaTag = document.head.querySelector("meta[name='workspace-id']")
     if (workspaceMetaTag == null) {
-        return null;
+	return null;
     }
-    
+
     return workspaceMetaTag.getAttribute("content");
 }
 
@@ -255,15 +255,15 @@ function postData(methodName, data = {}, contentType = "application/json") {
 		refreshGraph();
 	    } else {
 		if (xhttp.responseText) {
-                    error_details = JSON.parse(xhttp.responseText)
+		    error_details = JSON.parse(xhttp.responseText)
 
-                    if ('message' in error_details) {
-                        alert(error_details.message);
-		        console.error(error_details.message);
-                    } else {
-		        alert(xhttp.responseText);
-		        console.error(xhttp.responseText);
-                    }
+		    if ('message' in error_details) {
+			alert(error_details.message);
+			console.error(error_details.message);
+		    } else {
+			alert(xhttp.responseText);
+			console.error(xhttp.responseText);
+		    }
 		} else {
 		    alert('Failed to execute ' + methodName);
 		    console.error('Failed to execute ' + methodName);
@@ -341,7 +341,7 @@ function uploadArpFile(files) {
 }
 
 function uploadPcapFile(files) {
-    // TODO: Get this fixed 
+    // TODO: Get this fixed
     //postBinaryFile('upload_pcap_data', files[0]);
 }
 
@@ -374,13 +374,13 @@ function nodeForIp(ip) {
     if (ip == undefined || ip == 'undefined') {
 	return null;
     }
-    
+
     nodes = network.body.nodes;
     for (node_id in nodes) {
 	node = nodes[node_id]
-        if(node.options.ip == ip) {
-            return node;
-        }
+	if(node.options.ip == ip) {
+	    return node;
+	}
     }
 
     return null;
@@ -391,7 +391,7 @@ function isPrivateIp(ip) {
     // 10.0.0.0/8
     // 172.16.0.0/12 (172.16.0.0-172.31.255.255)
     // 192.168.0.0/16
-    
+
     octets = ip.split('.')
     if (octets[0] == '10') {
 	return true;
@@ -414,14 +414,14 @@ function isPrivateIp(ip) {
 function saveNode(data, callback) {
     ip = document.getElementById('node-popUp').getElementsByTagName('td')[1].children[0].value;
     node = nodeForIp(ip);
-    
+
     if (!isPrivateIp(ip) && node != null && data.id != node.id) {
-        alert(`ERROR: Node already exists with IP of ${ip}`);
+	alert(`ERROR: Node already exists with IP of ${ip}`);
     } else {
-        clearNodePopUp();
-        delete_view_specific_data_attrs(data);
-        postNodeData("upsert_node", data);
-        callback(data);
+	clearNodePopUp();
+	delete_view_specific_data_attrs(data);
+	postNodeData("upsert_node", data);
+	callback(data);
     }
 }
 
@@ -450,35 +450,35 @@ function formatIfacesForDisplay(networkInterfaces) {
     displayLines = [];
 
     for(var i = 0; i < networkInterfaces.length; i++) {
-        iface = networkInterfaces[i];
+	iface = networkInterfaces[i];
 
-        if('name' in iface && iface['name'] != null) {
-            if(networkInterfaces.length > 1) {
-                displayLines.push('<b>Network Interface ' + (i + 1) + ' (' + iface['name'] +')</b>');
-            } else {
-                displayLines.push('<b>Network Interface (' + iface['name'] +')</b>');
-            }
-        } else {
-            if(networkInterfaces.length > 1) {
-                displayLines.push('<b>Network Interface ' + (i + 1) + '</b>');
-            } else {
-                displayLines.push('<b>Network Interface</b>');
-            }
-        }
-        
-        if('mac_addr' in iface) {
-            displayLines.push('MAC Address: ' + iface['mac_addr']);
-        }
+	if('name' in iface && iface['name'] != null) {
+	    if(networkInterfaces.length > 1) {
+		displayLines.push('<b>Network Interface ' + (i + 1) + ' (' + iface['name'] +')</b>');
+	    } else {
+		displayLines.push('<b>Network Interface (' + iface['name'] +')</b>');
+	    }
+	} else {
+	    if(networkInterfaces.length > 1) {
+		displayLines.push('<b>Network Interface ' + (i + 1) + '</b>');
+	    } else {
+		displayLines.push('<b>Network Interface</b>');
+	    }
+	}
 
-        if('hardware_type' in iface) {
-            displayLines.push('Type: ' + iface['hardware_type']);
-        }
+	if('mac_addr' in iface) {
+	    displayLines.push('MAC Address: ' + iface['mac_addr']);
+	}
 
-        if('arp_flags' in iface) {
-            displayLines.push('ARP Flags: ' + iface['arp_flags']);
-        }
+	if('hardware_type' in iface) {
+	    displayLines.push('Type: ' + iface['hardware_type']);
+	}
 
-        displayLines.push('');
+	if('arp_flags' in iface) {
+	    displayLines.push('ARP Flags: ' + iface['arp_flags']);
+	}
+
+	displayLines.push('');
     }
 
     return displayLines;
@@ -502,23 +502,23 @@ function create_network(container, data, options) {
 			displayLines.push('<hr/>');
 		    }
 
-                    if('title' in elem) {
-		        displayLines.push('<b><u>IP:</u></b> ' + elem['title']);
-                    } else {
-                        displayLines.push('<b><u>IP:</u></b> ' + 'UNKNOWN');
-                    }
+		    if('title' in elem) {
+			displayLines.push('<b><u>IP:</u></b> ' + elem['title']);
+		    } else {
+			displayLines.push('<b><u>IP:</u></b> ' + 'UNKNOWN');
+		    }
 
-                    if('hostname' in elem) {
-		        displayLines.push('<b><u>Hostname:</u></b> ' + elem['hostname']);
-                    } else {
-                        displayLines.push('<b><u>Hostname:</u></b> ' + 'UNKNOWN');
-                    }
+		    if('hostname' in elem) {
+			displayLines.push('<b><u>Hostname:</u></b> ' + elem['hostname']);
+		    } else {
+			displayLines.push('<b><u>Hostname:</u></b> ' + 'UNKNOWN');
+		    }
 
-                    displayLines.push('');
+		    displayLines.push('');
 
-                    if('network_interfaces' in elem) {
-                        displayLines = displayLines.concat(formatIfacesForDisplay(elem['network_interfaces']));
-                    }
+		    if('network_interfaces' in elem) {
+			displayLines = displayLines.concat(formatIfacesForDisplay(elem['network_interfaces']));
+		    }
 
 		    if('device_types' in elem) {
 			device_type_list = JSON.parse(elem['device_types']);
@@ -543,8 +543,7 @@ function create_network(container, data, options) {
 		    }
 
 		    if('port_data' in elem) {
-			port_data_obj_str = elem['port_data'].replace(/'/gi, "\"");
-			var portData = JSON.parse(port_data_obj_str);
+			var portData = elem['port_data'];
 
 			for (var portNumber in portData) {
 			    var dataForPort = portData[portNumber];
@@ -552,12 +551,43 @@ function create_network(container, data, options) {
 			    displayLines.push('<br><b><u>Port Number:</u></b> ' + portNumber);
 
 			    for (var dataKey in dataForPort) {
-                                if(dataKey == 'port_number') {
-                                    continue
-                                }
-                                
+				if(dataKey == 'port_number') {
+				    continue
+				}
+
 				if(dataForPort[dataKey].length != 0) {
-				    displayLines.push(dataKey + ': ' + dataForPort[dataKey]);
+				    const data_entry = dataForPort[dataKey];
+				    var line = '';
+
+				    if('protocol' in data_entry) {
+					line += data_entry['protocol']
+				    } else {
+					line += 'protocol unknown'
+				    }
+
+				    line += ' ';
+
+				    if('state' in data_entry) {
+					line += data_entry['state'];
+				    } else {
+					line += 'state unknown'
+				    }
+
+				    line += ' | ';
+
+				    if('service' in data_entry) {
+					line += data_entry['service'];
+				    } else {
+					line += 'unknown service';
+				    }
+
+				    line += ' ';
+
+				    if('version' in data_entry) {
+					line += data_entry['version'];
+				    }
+
+				    displayLines.push(line);
 				}
 			    }
 			}
@@ -565,7 +595,7 @@ function create_network(container, data, options) {
 
 		    var edgeLabels = new Set();
 		    var allEdges = network.body.edges;
-		    
+
 		    for (var edgeIndex in allEdges) {
 			edge = allEdges[edgeIndex];
 			if (edge['fromId'] == elem['id'] || edge['toId'] == elem['id']) {
@@ -622,7 +652,7 @@ function create_network(container, data, options) {
 	    }
 	}
     });
-    
+
     return network;
 }
 
@@ -677,7 +707,7 @@ function getNodeData(data) {
 	    } else {
 		elem.label = elem.hostname;
 	    }
-	    
+
 	    networkNodes.push(elem);
 	}
     );
@@ -702,8 +732,8 @@ function getEdgeData(data) {
 	if(typeof node !== 'undefined' && typeof node.connections !== 'undefined') {
 	    // add the connection
 	    node.connections.forEach(function(edgeData, cIndex, conns) {
-		destinationId = edgeData.destination_node_id; 
-		
+		destinationId = edgeData.destination_node_id;
+
 		networkEdges.push({from: node.id, to: destinationId, label: edgeData.label});
 		let cNode = getNodeById(data, destinationId);
 
@@ -802,7 +832,7 @@ function refreshWorkspaceTabs() {
 		    // If the user is currently viewing the workspace that has been removed,
 		    // just refresh the page
 		    if (workspaceId == getWorkspaceId()) {
-                        setWorkspaceId(null);
+			setWorkspaceId(null);
 			location.reload();
 		    }
 		}
@@ -810,10 +840,10 @@ function refreshWorkspaceTabs() {
 	    }
 
 	    for (var i = 0; i < workspaces.length; i++) {
-                if (getWorkspaceId() == null){
-                    setWorkspaceId(workspaces[i]['id']);
-                }
-                
+		if (getWorkspaceId() == null){
+		    setWorkspaceId(workspaces[i]['id']);
+		}
+
 		if (tabExists(workspaces[i]['name'], currentTabs)) {
 		    continue;
 		} else {
@@ -856,7 +886,7 @@ function loadWorkspace(workspaceId) {
 	    tabButton.style.color = '#03fc45';
 	}
     }
-    
+
     refreshGraph(true);
 }
 
@@ -876,8 +906,8 @@ function removeWorkspace() {
 
     if (proceed) {
 	postJsonData('delete_workspace', { 'workspace_id': getWorkspaceId() });
-        setWorkspaceId(null);
-        refreshWorkspaceTabs();
+	setWorkspaceId(null);
+	refreshWorkspaceTabs();
 	location.reload();
     }
 }
