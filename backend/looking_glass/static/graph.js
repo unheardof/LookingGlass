@@ -521,7 +521,7 @@ function create_network(container, data, options) {
 		    }
 
 		    if('device_types' in elem) {
-			device_type_list = JSON.parse(elem['device_types']);
+			device_type_list = JSON.parse(setStringToList(elem['device_types']));
 			if(device_type_list.length != 0) {
 			    displayLines.push('<br><b><u>Device Types:</u></b>');
 			    for(var device in device_type_list) {
@@ -531,9 +531,7 @@ function create_network(container, data, options) {
 		    }
 
 		    if('os_list' in elem && elem['os_list'].length != 0) {
-			os_list_str = elem['os_list'].replace(/'/g, "\"");
-
-			os_list = JSON.parse(os_list_str);
+			os_list = JSON.parse(setStringToList(elem['os_list']));
 			if(os_list.length != 0) {
 			    displayLines.push('<br><b><u>OS Info:</u></b>');
 			    for(var i in os_list) {
